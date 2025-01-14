@@ -4,24 +4,29 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/avast/retry-go/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mdayat/running-man/commands"
 	"github.com/mdayat/running-man/configs/env"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-var DefaultMessage = `
-Selamat datang di @RunningManSeriesBot! Dengan bot ini, Anda dapat mengelola dan membeli episode lama dari "Running Man." Berikut adalah perintah yang dapat Anda gunakan:
+func sendMessage(bot *tgbotapi.BotAPI, msg tgbotapi.MessageConfig) error {
+	retryFunc := func() error {
+		if _, err := bot.Send(msg); err != nil {
+			return err
+		}
 
-/start - Selamat datang dan pengenalan
-/help - Dapatkan bantuan dan daftar perintah yang tersedia
-/browse - Tampilkan katalog episode
-/search [nomor_episode] - Cari episode tertentu
-/buy [nomor_episode] - Beli episode
-/checkout - Selesaikan pembelian dengan Telegram stars
-/mycollection - Tampilkan episode yang sudah dibeli
-/feedback - Kirimkan umpan balik atau laporkan masalah
-`
+		return nil
+	}
+
+	if err := retry.Do(retryFunc, retry.Attempts(3)); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -53,19 +58,33 @@ func main() {
 			continue
 		}
 
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		switch update.Message.Command() {
-		case "start":
-			msg.Text = DefaultMessage
-		case "help":
-			msg.Text = DefaultMessage
-		default:
-			msg.Text = DefaultMessage
-		}
+		case "browse":
+			bc := commands.BrowseCommand{ChatID: update.Message.Chat.ID}
+			msg, err := bc.Process()
+			if err != nil {
+				logger.Err(err).Msg("failed to process browse command")
+				continue
+			}
 
-		if _, err := bot.Send(msg); err != nil {
-			logger.Err(err).Msg("failed to send message")
-			continue
+			if err := sendMessage(bot, msg); err != nil {
+				logger.Err(err).Msg("failed to send browse command's message")
+				continue
+			}
+		case "start", "help":
+			fallthrough
+		default:
+			dc := commands.DefaultCommand{ChatID: update.Message.Chat.ID}
+			msg, err := dc.Process()
+			if err != nil {
+				logger.Err(err).Msg("failed to process default command")
+				continue
+			}
+
+			if err := sendMessage(bot, msg); err != nil {
+				logger.Err(err).Msg("failed to send default command's message")
+				continue
+			}
 		}
 	}
 }

@@ -3,6 +3,7 @@ module github.com/mdayat/running-man
 go 1.23.4
 
 require (
+	github.com/avast/retry-go/v4 v4.6.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/joho/godotenv v1.5.1
 	github.com/rs/zerolog v1.33.0
