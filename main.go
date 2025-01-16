@@ -6,8 +6,8 @@ import (
 
 	"github.com/avast/retry-go/v4"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/mdayat/running-man/commands"
 	"github.com/mdayat/running-man/configs/env"
+	"github.com/mdayat/running-man/internal/commands"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
