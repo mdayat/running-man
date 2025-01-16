@@ -12,9 +12,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func sendMessage(bot *tgbotapi.BotAPI, msg tgbotapi.MessageConfig) error {
+func sendChat(bot *tgbotapi.BotAPI, chat tgbotapi.Chattable) error {
 	retryFunc := func() error {
-		if _, err := bot.Send(msg); err != nil {
+		if _, err := bot.Send(chat); err != nil {
 			return err
 		}
 
@@ -60,29 +60,29 @@ func main() {
 
 		switch update.Message.Command() {
 		case "browse":
-			bc := commands.BrowseCommand{ChatID: update.Message.Chat.ID}
-			msg, err := bc.Process()
+			bc := commands.Browse{ChatID: update.Message.Chat.ID}
+			chat, err := bc.Process()
 			if err != nil {
 				logger.Err(err).Msg("failed to process browse command")
 				continue
 			}
 
-			if err := sendMessage(bot, msg); err != nil {
-				logger.Err(err).Msg("failed to send browse command's message")
+			if err := sendChat(bot, chat); err != nil {
+				logger.Err(err).Msg("failed to send browse command's chat")
 				continue
 			}
 		case "start", "help":
 			fallthrough
 		default:
-			dc := commands.DefaultCommand{ChatID: update.Message.Chat.ID}
-			msg, err := dc.Process()
+			dc := commands.Default{ChatID: update.Message.Chat.ID}
+			chat, err := dc.Process()
 			if err != nil {
 				logger.Err(err).Msg("failed to process default command")
 				continue
 			}
 
-			if err := sendMessage(bot, msg); err != nil {
-				logger.Err(err).Msg("failed to send default command's message")
+			if err := sendChat(bot, chat); err != nil {
+				logger.Err(err).Msg("failed to send default command's chat")
 				continue
 			}
 		}

@@ -17,11 +17,11 @@ Selamat datang di @RunningManSeriesBot! Dengan bot ini, Anda dapat mengelola dan
 /feedback - Kirimkan umpan balik atau laporkan masalah
 `
 
-type DefaultCommand struct {
+type Default struct {
 	ChatID int64
 }
 
-func (dc DefaultCommand) Process() (msg tgbotapi.MessageConfig, _ error) {
-	msg = tgbotapi.NewMessage(dc.ChatID, defaultMessage)
-	return msg, nil
+func (d Default) Process() (chat tgbotapi.Chattable, _ error) {
+	chat = tgbotapi.NewMessage(d.ChatID, defaultMessage)
+	return chat, nil
 }
