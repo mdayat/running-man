@@ -12,16 +12,16 @@ type Browse struct {
 }
 
 func (b Browse) Process() (tg.Chattable, error) {
-	rml := callback.RunningManLibrary{}
-	libraries, err := rml.GetRunningManLibraries()
+	var rml callback.RunningManYears
+	years, err := rml.GetRunningManYears()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get running man libraries: %w", err)
+		return nil, fmt.Errorf("failed to get running man years: %w", err)
 	}
 
-	rml.Libraries = libraries
-	rml.SortLibraries()
+	rml.Years = years
+	rml.SortYears()
 
-	chat := tg.NewMessage(b.ChatID, "Pilih tahun Running Man:")
+	chat := tg.NewMessage(b.ChatID, callback.RunningManYearTextMsg)
 	chat.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeRunningManEpisode)
 	return chat, nil
 }

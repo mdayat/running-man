@@ -94,25 +94,31 @@ func main() {
 			cbData := splittedCallbackData[1]
 
 			switch cbType {
-			case callback.TypeRunningManLibrary:
-				rml := callback.RunningManLibrary{
+			case callback.TypeRunningManYear:
+				rml := callback.RunningManYears{
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
 				}
 
 				chat, err := rml.Process()
 				if err != nil {
-					logger.Err(err).Msg("failed to process running man library callback")
+					logger.Err(err).Msg("failed to process running man year callback")
 					continue
 				}
 
 				if err := sendChat(bot, chat); err != nil {
-					logger.Err(err).Msg("failed to send updated chat for running man library inline keyboard")
+					logger.Err(err).Msg("failed to send updated chat for running man year inline keyboard")
 					continue
 				}
 			case callback.TypeRunningManEpisode:
+				rmYear, err := strconv.Atoi(cbData)
+				if err != nil {
+					logger.Err(err).Msg("failed to convert running man year string to int")
+					continue
+				}
+
 				rme := callback.RunningManEpisode{
-					LibraryID: cbData,
+					Year:      rmYear,
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
 				}

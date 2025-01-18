@@ -9,30 +9,21 @@ import (
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var TypeRunningManLibrary InlineKeyboardType = "library"
+var (
+	TypeRunningManYear    InlineKeyboardType = "year"
+	RunningManYearTextMsg                    = "Pilih tahun Running Man:"
+)
 
-type Library struct {
-	LibraryID string
-	Year      int
-}
-
-type RunningManLibrary struct {
+type RunningManYears struct {
 	ChatID    int64
 	MessageID int
-	Libraries []Library
+	Years     []int
 }
 
-func (rml RunningManLibrary) GetRunningManLibraries() ([]Library, error) {
+func (rml RunningManYears) GetRunningManYears() ([]int, error) {
 	// will be replaced by querying to database
-	retryFunc := func() ([]Library, error) {
-		result := []Library{
-			{LibraryID: "123132", Year: 2020},
-			{LibraryID: "123132", Year: 2018},
-			{LibraryID: "123132", Year: 2015},
-			{LibraryID: "123132", Year: 2017},
-			{LibraryID: "123132", Year: 2016},
-			{LibraryID: "123132", Year: 2011},
-		}
+	retryFunc := func() ([]int, error) {
+		result := []int{2020, 2018, 2015, 2017, 2016, 2011}
 		return result, nil
 	}
 
@@ -44,22 +35,22 @@ func (rml RunningManLibrary) GetRunningManLibraries() ([]Library, error) {
 	return result, nil
 }
 
-func (rml RunningManLibrary) SortLibraries() {
-	sort.Slice(rml.Libraries, func(i, j int) bool {
-		return rml.Libraries[i].Year < rml.Libraries[j].Year
+func (rml RunningManYears) SortYears() {
+	sort.Slice(rml.Years, func(i, j int) bool {
+		return rml.Years[i] < rml.Years[j]
 	})
 }
 
-func (rml RunningManLibrary) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rml RunningManYears) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	numOfRowItems := 3
-	numOfRows := int(math.Ceil(float64(len(rml.Libraries) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(rml.Years) / numOfRowItems)))
 
 	inlineKeyboardRows := make([][]tg.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
 
-	for _, v := range rml.Libraries {
-		btnText := fmt.Sprintf("%d", v.Year)
-		btnData := fmt.Sprintf("%s:%s", inlineKeyboardType, v.LibraryID)
+	for _, v := range rml.Years {
+		btnText := fmt.Sprintf("%d", v)
+		btnData := fmt.Sprintf("%s:%d", inlineKeyboardType, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -75,21 +66,15 @@ func (rml RunningManLibrary) GenInlineKeyboard(inlineKeyboardType InlineKeyboard
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rml RunningManLibrary) Process() (tg.Chattable, error) {
-	libraries, err := rml.GetRunningManLibraries()
+func (rml RunningManYears) Process() (tg.Chattable, error) {
+	years, err := rml.GetRunningManYears()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get running man libraries: %w", err)
+		return nil, fmt.Errorf("failed to get running man years: %w", err)
 	}
 
-	rml.Libraries = libraries
-	rml.SortLibraries()
+	rml.Years = years
+	rml.SortYears()
 
-	chat := tg.NewEditMessageTextAndMarkup(
-		rml.ChatID,
-		rml.MessageID,
-		"Pilih tahun Running Man:",
-		rml.GenInlineKeyboard(TypeRunningManEpisode),
-	)
-
+	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, RunningManYearTextMsg, rml.GenInlineKeyboard(TypeRunningManEpisode))
 	return chat, nil
 }
