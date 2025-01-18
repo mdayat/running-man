@@ -3,16 +3,18 @@ package main
 import (
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/avast/retry-go/v4"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mdayat/running-man/configs/env"
-	"github.com/mdayat/running-man/internal/commands"
+	"github.com/mdayat/running-man/internal/callback"
+	"github.com/mdayat/running-man/internal/command"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
-func sendChat(bot *tgbotapi.BotAPI, chat tgbotapi.Chattable) error {
+func sendChat(bot *tg.BotAPI, chat tg.Chattable) error {
 	retryFunc := func() error {
 		if _, err := bot.Send(chat); err != nil {
 			return err
@@ -40,51 +42,94 @@ func main() {
 		logger.Fatal().Err(err).Send()
 	}
 
-	bot, err := tgbotapi.NewBotAPI(env.BOT_TOKEN)
+	bot, err := tg.NewBotAPI(env.BOT_TOKEN)
 	if err != nil {
 		logger.Fatal().Err(err).Send()
 	}
 
-	updateConfig := tgbotapi.NewUpdate(0)
+	updateConfig := tg.NewUpdate(0)
 	updateConfig.Timeout = 60
 	updates := bot.GetUpdatesChan(updateConfig)
 
 	for update := range updates {
-		if update.Message == nil {
+		if update.Message != nil && !update.Message.IsCommand() {
 			continue
 		}
 
-		if !update.Message.IsCommand() {
+		if update.Message != nil {
+			switch update.Message.Command() {
+			case "browse":
+				bc := command.Browse{ChatID: update.Message.Chat.ID}
+				chat, err := bc.Process()
+				if err != nil {
+					logger.Err(err).Msg("failed to process browse command")
+					continue
+				}
+
+				if err := sendChat(bot, chat); err != nil {
+					logger.Err(err).Msg("failed to send browse command's chat")
+					continue
+				}
+			case "start", "help":
+				fallthrough
+			default:
+				dc := command.Default{ChatID: update.Message.Chat.ID}
+				chat, err := dc.Process()
+				if err != nil {
+					logger.Err(err).Msg("failed to process default command")
+					continue
+				}
+
+				if err := sendChat(bot, chat); err != nil {
+					logger.Err(err).Msg("failed to send default command's chat")
+					continue
+				}
+			}
 			continue
 		}
 
-		switch update.Message.Command() {
-		case "browse":
-			bc := commands.Browse{ChatID: update.Message.Chat.ID}
-			chat, err := bc.Process()
-			if err != nil {
-				logger.Err(err).Msg("failed to process browse command")
-				continue
-			}
+		if update.CallbackQuery != nil {
+			splittedCallbackData := strings.Split(update.CallbackQuery.Data, ":")
+			cbType := callback.InlineKeyboardType(splittedCallbackData[0])
+			cbData := splittedCallbackData[1]
 
-			if err := sendChat(bot, chat); err != nil {
-				logger.Err(err).Msg("failed to send browse command's chat")
-				continue
-			}
-		case "start", "help":
-			fallthrough
-		default:
-			dc := commands.Default{ChatID: update.Message.Chat.ID}
-			chat, err := dc.Process()
-			if err != nil {
-				logger.Err(err).Msg("failed to process default command")
-				continue
-			}
+			switch cbType {
+			case callback.TypeRunningManLibrary:
+				rml := callback.RunningManLibrary{
+					ChatID:    update.CallbackQuery.Message.Chat.ID,
+					MessageID: update.CallbackQuery.Message.MessageID,
+				}
 
-			if err := sendChat(bot, chat); err != nil {
-				logger.Err(err).Msg("failed to send default command's chat")
-				continue
+				chat, err := rml.Process()
+				if err != nil {
+					logger.Err(err).Msg("failed to process running man library callback")
+					continue
+				}
+
+				if err := sendChat(bot, chat); err != nil {
+					logger.Err(err).Msg("failed to send updated chat for running man library inline keyboard")
+					continue
+				}
+			case callback.TypeRunningManEpisode:
+				rme := callback.RunningManEpisode{
+					LibraryID: cbData,
+					ChatID:    update.CallbackQuery.Message.Chat.ID,
+					MessageID: update.CallbackQuery.Message.MessageID,
+				}
+
+				chat, err := rme.Process()
+				if err != nil {
+					logger.Err(err).Msg("failed to process running man episode callback")
+					continue
+				}
+
+				if err := sendChat(bot, chat); err != nil {
+					logger.Err(err).Msg("failed to send updated chat for running man episode inline keyboard")
+					continue
+				}
+			default:
 			}
+			continue
 		}
 	}
 }
