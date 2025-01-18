@@ -9,32 +9,22 @@ import (
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var TypeRunningManEpisode InlineKeyboardType = "episode"
-
-type Episode struct {
-	MovieID string
-	Episode int
-}
+var (
+	TypeRunningManEpisode    InlineKeyboardType = "episode"
+	RunningManEpisodeTextMsg                    = "Pilih episode Running Man:"
+)
 
 type RunningManEpisode struct {
-	LibraryID string
+	Year      int
 	ChatID    int64
 	MessageID int
-	Episodes  []Episode
+	Episodes  []int
 }
 
-func (rme RunningManEpisode) GetRunningManEpisodes() ([]Episode, error) {
+func (rme RunningManEpisode) GetRunningManEpisodes() ([]int, error) {
 	// will be replaced by querying to database
-	retryFunc := func() ([]Episode, error) {
-		result := []Episode{
-			{MovieID: "123132", Episode: 420},
-			{MovieID: "123132", Episode: 418},
-			{MovieID: "123132", Episode: 415},
-			{MovieID: "123132", Episode: 417},
-			{MovieID: "123132", Episode: 416},
-			{MovieID: "123132", Episode: 411},
-		}
-
+	retryFunc := func() ([]int, error) {
+		result := []int{420, 418, 415, 417, 416, 411}
 		return result, nil
 	}
 
@@ -48,7 +38,7 @@ func (rme RunningManEpisode) GetRunningManEpisodes() ([]Episode, error) {
 
 func (rme RunningManEpisode) SortEpisodes() {
 	sort.Slice(rme.Episodes, func(i, j int) bool {
-		return rme.Episodes[i].Episode < rme.Episodes[j].Episode
+		return rme.Episodes[i] < rme.Episodes[j]
 	})
 }
 
@@ -60,8 +50,8 @@ func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboard
 	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
 
 	for _, v := range rme.Episodes {
-		btnText := fmt.Sprintf("%d", v.Episode)
-		btnData := fmt.Sprintf("%s:%s", inlineKeyboardType, v.MovieID)
+		btnText := fmt.Sprintf("%d", v)
+		btnData := fmt.Sprintf("%s:%d", inlineKeyboardType, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -75,7 +65,7 @@ func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboard
 	}
 
 	inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(
-		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeRunningManLibrary, "")),
+		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeRunningManYear, "")),
 	))
 
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
@@ -90,12 +80,6 @@ func (rme RunningManEpisode) Process() (tg.Chattable, error) {
 	rme.Episodes = episodes
 	rme.SortEpisodes()
 
-	chat := tg.NewEditMessageTextAndMarkup(
-		rme.ChatID,
-		rme.MessageID,
-		"Pilih episode Running Man:",
-		rme.GenInlineKeyboard("TODO"),
-	)
-
+	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, RunningManEpisodeTextMsg, rme.GenInlineKeyboard("TODO"))
 	return chat, nil
 }
