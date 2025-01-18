@@ -6,22 +6,26 @@ import (
 	"sort"
 
 	"github.com/avast/retry-go/v4"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var TypeRunningManLibrary InlineKeyboardType = "library"
 
-type RunningManLibrary struct {
+type Library struct {
 	LibraryID string
 	Year      int
 }
 
-type RunningManLibraries []RunningManLibrary
+type RunningManLibrary struct {
+	ChatID    int64
+	MessageID int
+	Libraries []Library
+}
 
-func (rml RunningManLibraries) GetRunningManLibraries() (RunningManLibraries, error) {
+func (rml RunningManLibrary) GetRunningManLibraries() ([]Library, error) {
 	// will be replaced by querying to database
-	retryFunc := func() (RunningManLibraries, error) {
-		result := RunningManLibraries{
+	retryFunc := func() ([]Library, error) {
+		result := []Library{
 			{LibraryID: "123132", Year: 2020},
 			{LibraryID: "123132", Year: 2018},
 			{LibraryID: "123132", Year: 2015},
@@ -40,35 +44,52 @@ func (rml RunningManLibraries) GetRunningManLibraries() (RunningManLibraries, er
 	return result, nil
 }
 
-func (rml RunningManLibraries) Sort() {
-	sort.Slice(rml, func(i, j int) bool {
-		return rml[i].Year < rml[j].Year
+func (rml RunningManLibrary) SortLibraries() {
+	sort.Slice(rml.Libraries, func(i, j int) bool {
+		return rml.Libraries[i].Year < rml.Libraries[j].Year
 	})
 }
 
-func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tgbotapi.InlineKeyboardMarkup {
+func (rml RunningManLibrary) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	numOfRowItems := 3
-	numOfRows := int(math.Ceil(float64(len(rml) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(rml.Libraries) / numOfRowItems)))
 
-	inlineKeyboardRows := make([][]tgbotapi.InlineKeyboardButton, 0, numOfRows)
-	inlineKeyboardRowItems := make([]tgbotapi.InlineKeyboardButton, 0, numOfRowItems)
+	inlineKeyboardRows := make([][]tg.InlineKeyboardButton, 0, numOfRows)
+	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
 
-	for i := 0; i < len(rml); i++ {
-		btnText := fmt.Sprintf("%d", rml[i].Year)
-		btnData := fmt.Sprintf("%s:%s", inlineKeyboardType, rml[i].LibraryID)
-		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tgbotapi.NewInlineKeyboardButtonData(
-			btnText, btnData,
-		))
+	for _, v := range rml.Libraries {
+		btnText := fmt.Sprintf("%d", v.Year)
+		btnData := fmt.Sprintf("%s:%s", inlineKeyboardType, v.LibraryID)
+		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
-		if len(inlineKeyboardRowItems) == 3 {
-			inlineKeyboardRows = append(inlineKeyboardRows, tgbotapi.NewInlineKeyboardRow(inlineKeyboardRowItems...))
+		if len(inlineKeyboardRowItems) == numOfRowItems {
+			inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(inlineKeyboardRowItems...))
 			inlineKeyboardRowItems = inlineKeyboardRowItems[:0]
 		}
 	}
 
 	if len(inlineKeyboardRowItems) != 0 {
-		inlineKeyboardRows = append(inlineKeyboardRows, tgbotapi.NewInlineKeyboardRow(inlineKeyboardRowItems...))
+		inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(inlineKeyboardRowItems...))
 	}
 
-	return tgbotapi.NewInlineKeyboardMarkup(inlineKeyboardRows...)
+	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
+}
+
+func (rml RunningManLibrary) Process() (tg.Chattable, error) {
+	libraries, err := rml.GetRunningManLibraries()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get running man libraries: %w", err)
+	}
+
+	rml.Libraries = libraries
+	rml.SortLibraries()
+
+	chat := tg.NewEditMessageTextAndMarkup(
+		rml.ChatID,
+		rml.MessageID,
+		"Pilih tahun Running Man:",
+		rml.GenInlineKeyboard(TypeRunningManEpisode),
+	)
+
+	return chat, nil
 }
