@@ -51,7 +51,7 @@ func (rme RunningManEpisodes) GenInlineKeyboard(inlineKeyboardType InlineKeyboar
 
 	for _, v := range rme.Episodes {
 		btnText := fmt.Sprintf("%d", v)
-		btnData := fmt.Sprintf("%s:%d", inlineKeyboardType, v)
+		btnData := fmt.Sprintf("%s:%d:%d", inlineKeyboardType, rme.Year, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -80,6 +80,6 @@ func (rme RunningManEpisodes) Process() (tg.Chattable, error) {
 	rme.Episodes = episodes
 	rme.SortEpisodes()
 
-	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, EpisodesTextMsg, rme.GenInlineKeyboard("TODO"))
+	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, EpisodesTextMsg, rme.GenInlineKeyboard(TypeEpisode))
 	return chat, nil
 }

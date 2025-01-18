@@ -90,10 +90,9 @@ func main() {
 
 		if update.CallbackQuery != nil {
 			splittedCallbackData := strings.Split(update.CallbackQuery.Data, ":")
-			cbType := callback.InlineKeyboardType(splittedCallbackData[0])
-			cbData := splittedCallbackData[1]
+			callbackType := callback.InlineKeyboardType(splittedCallbackData[0])
 
-			switch cbType {
+			switch callbackType {
 			case callback.TypeYears:
 				rml := callback.RunningManYears{
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
@@ -102,25 +101,57 @@ func main() {
 
 				chat, err := rml.Process()
 				if err != nil {
-					logger.Err(err).Msg("failed to process running man year callback")
+					logger.Err(err).Msg("failed to process running man years callback")
 					continue
 				}
 
 				if err := sendChat(bot, chat); err != nil {
-					logger.Err(err).Msg("failed to send updated chat for running man year inline keyboard")
+					logger.Err(err).Msg("failed to send updated chat for running man years inline keyboard")
 					continue
 				}
 			case callback.TypeEpisodes:
-				rmYear, err := strconv.Atoi(cbData)
+				year, err := strconv.Atoi(splittedCallbackData[1])
 				if err != nil {
 					logger.Err(err).Msg("failed to convert running man year string to int")
 					continue
 				}
 
 				rme := callback.RunningManEpisodes{
-					Year:      rmYear,
+					Year:      year,
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
+				}
+
+				chat, err := rme.Process()
+				if err != nil {
+					logger.Err(err).Msg("failed to process running man episodes callback")
+					continue
+				}
+
+				if err := sendChat(bot, chat); err != nil {
+					logger.Err(err).Msg("failed to send updated chat for running man episodes inline keyboard")
+					continue
+				}
+			case callback.TypeEpisode, callback.TypePurchase:
+				year, err := strconv.Atoi(splittedCallbackData[1])
+				if err != nil {
+					logger.Err(err).Msg("failed to convert running man year string to int")
+					continue
+				}
+
+				episode, err := strconv.Atoi(splittedCallbackData[2])
+				if err != nil {
+					logger.Err(err).Msg("failed to convert running man episode string to int")
+					continue
+				}
+
+				rme := callback.RunningManEpisode{
+					UserID:       update.CallbackQuery.From.ID,
+					ChatID:       update.CallbackQuery.Message.Chat.ID,
+					MessageID:    update.CallbackQuery.Message.MessageID,
+					Year:         year,
+					Episode:      episode,
+					IsPurchasing: callbackType == callback.TypePurchase,
 				}
 
 				chat, err := rme.Process()
