@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	TypeRunningManYear    InlineKeyboardType = "year"
-	RunningManYearTextMsg                    = "Pilih tahun Running Man:"
+	TypeYears    InlineKeyboardType = "years"
+	YearsTextMsg                    = "Pilih tahun Running Man:"
 )
 
 type RunningManYears struct {
@@ -75,6 +75,6 @@ func (rml RunningManYears) Process() (tg.Chattable, error) {
 	rml.Years = years
 	rml.SortYears()
 
-	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, RunningManYearTextMsg, rml.GenInlineKeyboard(TypeRunningManEpisode))
+	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, YearsTextMsg, rml.GenInlineKeyboard(TypeEpisodes))
 	return chat, nil
 }

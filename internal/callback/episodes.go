@@ -10,18 +10,18 @@ import (
 )
 
 var (
-	TypeRunningManEpisode    InlineKeyboardType = "episode"
-	RunningManEpisodeTextMsg                    = "Pilih episode Running Man:"
+	TypeEpisodes    InlineKeyboardType = "episodes"
+	EpisodesTextMsg                    = "Pilih episode Running Man:"
 )
 
-type RunningManEpisode struct {
+type RunningManEpisodes struct {
 	Year      int
 	ChatID    int64
 	MessageID int
 	Episodes  []int
 }
 
-func (rme RunningManEpisode) GetRunningManEpisodes() ([]int, error) {
+func (rme RunningManEpisodes) GetRunningManEpisodes() ([]int, error) {
 	// will be replaced by querying to database
 	retryFunc := func() ([]int, error) {
 		result := []int{420, 418, 415, 417, 416, 411}
@@ -36,13 +36,13 @@ func (rme RunningManEpisode) GetRunningManEpisodes() ([]int, error) {
 	return result, nil
 }
 
-func (rme RunningManEpisode) SortEpisodes() {
+func (rme RunningManEpisodes) SortEpisodes() {
 	sort.Slice(rme.Episodes, func(i, j int) bool {
 		return rme.Episodes[i] < rme.Episodes[j]
 	})
 }
 
-func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rme RunningManEpisodes) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	numOfRowItems := 5
 	numOfRows := int(math.Ceil(float64(len(rme.Episodes) / numOfRowItems)))
 
@@ -65,13 +65,13 @@ func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboard
 	}
 
 	inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(
-		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeRunningManYear, "")),
+		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeYears, "")),
 	))
 
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rme RunningManEpisode) Process() (tg.Chattable, error) {
+func (rme RunningManEpisodes) Process() (tg.Chattable, error) {
 	episodes, err := rme.GetRunningManEpisodes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get running man episodes: %w", err)
@@ -80,6 +80,6 @@ func (rme RunningManEpisode) Process() (tg.Chattable, error) {
 	rme.Episodes = episodes
 	rme.SortEpisodes()
 
-	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, RunningManEpisodeTextMsg, rme.GenInlineKeyboard("TODO"))
+	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, EpisodesTextMsg, rme.GenInlineKeyboard("TODO"))
 	return chat, nil
 }

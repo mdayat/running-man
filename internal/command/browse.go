@@ -21,7 +21,7 @@ func (b Browse) Process() (tg.Chattable, error) {
 	rml.Years = years
 	rml.SortYears()
 
-	chat := tg.NewMessage(b.ChatID, callback.RunningManYearTextMsg)
-	chat.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeRunningManEpisode)
+	chat := tg.NewMessage(b.ChatID, callback.YearsTextMsg)
+	chat.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeEpisodes)
 	return chat, nil
 }
