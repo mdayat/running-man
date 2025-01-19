@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"github.com/avast/retry-go/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mdayat/running-man/configs/env"
+	"github.com/mdayat/running-man/configs/services"
 	"github.com/mdayat/running-man/internal/callback"
 	"github.com/mdayat/running-man/internal/command"
 	"github.com/rs/zerolog"
@@ -37,10 +39,16 @@ func main() {
 	}
 
 	logger := log.With().Caller().Logger()
-	err := env.Init()
+	if err := env.New(); err != nil {
+		logger.Fatal().Err(err).Send()
+	}
+
+	ctx := context.TODO()
+	db, err := services.NewDB(ctx, env.DATABASE_URL)
 	if err != nil {
 		logger.Fatal().Err(err).Send()
 	}
+	defer db.Close()
 
 	bot, err := tg.NewBotAPI(env.BOT_TOKEN)
 	if err != nil {
