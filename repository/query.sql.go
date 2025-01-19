@@ -9,6 +9,31 @@ import (
 	"context"
 )
 
+const checkUserExistence = `-- name: CheckUserExistence :one
+SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1)
+`
+
+func (q *Queries) CheckUserExistence(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, checkUserExistence, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const createUser = `-- name: CreateUser :exec
+INSERT INTO "user" (id, first_name) VALUES ($1, $2)
+`
+
+type CreateUserParams struct {
+	ID        int64  `json:"id"`
+	FirstName string `json:"first_name"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
+	_, err := q.db.Exec(ctx, createUser, arg.ID, arg.FirstName)
+	return err
+}
+
 const getRunningManLibraries = `-- name: GetRunningManLibraries :many
 SELECT id, year, created_at FROM running_man_library
 `

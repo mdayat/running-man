@@ -81,7 +81,12 @@ func main() {
 			case "start", "help":
 				fallthrough
 			default:
-				dc := command.Default{ChatID: update.Message.Chat.ID}
+				dc := command.Default{
+					UserID:    update.Message.From.ID,
+					ChatID:    update.Message.Chat.ID,
+					FirstName: update.Message.From.FirstName,
+				}
+
 				chat, err := dc.Process()
 				if err != nil {
 					logger.Err(err).Msg("failed to process default command")
