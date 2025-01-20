@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/avast/retry-go/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -35,12 +36,28 @@ func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboard
 type InvoicePayload struct {
 	UserID  int64 `json:"user_id"`
 	Episode int32 `json:"episode"`
+	Amount  int
 }
 
 func (rme RunningManEpisode) GenInvoice() (tg.Chattable, error) {
+	price, err := retry.DoWithData(
+		func() (_ int32, err error) {
+			return services.Queries.GetRunningManVideoPrice(context.TODO(), rme.Episode)
+		},
+		retry.Attempts(3),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get running man video price: %w", err)
+	}
+
+	tax := int(math.Ceil(float64(price) * 0.11))
+	priceAfterTax := int(price) + tax
+
 	payload := InvoicePayload{
 		UserID:  rme.UserID,
 		Episode: rme.Episode,
+		Amount:  priceAfterTax,
 	}
 
 	payloadJSON, err := json.Marshal(payload)
@@ -56,7 +73,7 @@ func (rme RunningManEpisode) GenInvoice() (tg.Chattable, error) {
 		"",
 		"start_param_unique_v1",
 		"XTR",
-		[]tg.LabeledPrice{{Label: "XTR", Amount: 1}},
+		[]tg.LabeledPrice{{Label: "XTR", Amount: payload.Amount}},
 	)
 	invoice.SuggestedTipAmounts = []int{}
 
