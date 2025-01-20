@@ -20,6 +20,22 @@ func (q *Queries) CheckUserExistence(ctx context.Context, id int64) (bool, error
 	return exists, err
 }
 
+const checkUserVideo = `-- name: CheckUserVideo :one
+SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2)
+`
+
+type CheckUserVideoParams struct {
+	UserID                 int64 `json:"user_id"`
+	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
+}
+
+func (q *Queries) CheckUserVideo(ctx context.Context, arg CheckUserVideoParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkUserVideo, arg.UserID, arg.RunningManVideoEpisode)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const createUser = `-- name: CreateUser :exec
 INSERT INTO "user" (id, first_name) VALUES ($1, $2)
 `

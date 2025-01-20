@@ -1,6 +1,9 @@
 -- name: CheckUserExistence :one
 SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);
 
+-- name: CheckUserVideo :one
+SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2);
+
 -- name: CreateUser :exec
 INSERT INTO "user" (id, first_name) VALUES ($1, $2);
 
