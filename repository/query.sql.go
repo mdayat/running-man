@@ -35,22 +35,22 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 }
 
 const getRunningManLibraries = `-- name: GetRunningManLibraries :many
-SELECT id, year, created_at FROM running_man_library
+SELECT year FROM running_man_library ORDER BY year ASC
 `
 
-func (q *Queries) GetRunningManLibraries(ctx context.Context) ([]RunningManLibrary, error) {
+func (q *Queries) GetRunningManLibraries(ctx context.Context) ([]int32, error) {
 	rows, err := q.db.Query(ctx, getRunningManLibraries)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RunningManLibrary
+	var items []int32
 	for rows.Next() {
-		var i RunningManLibrary
-		if err := rows.Scan(&i.ID, &i.Year, &i.CreatedAt); err != nil {
+		var year int32
+		if err := rows.Scan(&year); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, year)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -59,28 +59,22 @@ func (q *Queries) GetRunningManLibraries(ctx context.Context) ([]RunningManLibra
 }
 
 const getRunningManVideosByYear = `-- name: GetRunningManVideosByYear :many
-SELECT id, running_man_library_year, episode, price, created_at FROM running_man_video WHERE running_man_library_year = $1
+SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC
 `
 
-func (q *Queries) GetRunningManVideosByYear(ctx context.Context, runningManLibraryYear int32) ([]RunningManVideo, error) {
+func (q *Queries) GetRunningManVideosByYear(ctx context.Context, runningManLibraryYear int32) ([]int32, error) {
 	rows, err := q.db.Query(ctx, getRunningManVideosByYear, runningManLibraryYear)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RunningManVideo
+	var items []int32
 	for rows.Next() {
-		var i RunningManVideo
-		if err := rows.Scan(
-			&i.ID,
-			&i.RunningManLibraryYear,
-			&i.Episode,
-			&i.Price,
-			&i.CreatedAt,
-		); err != nil {
+		var episode int32
+		if err := rows.Scan(&episode); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, episode)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
