@@ -10,7 +10,10 @@ type Browse struct {
 }
 
 func (b Browse) Process() (tg.Chattable, error) {
-	var rml callback.RunningManLibraries
+	rml := callback.RunningManLibraries{
+		ChatID: b.ChatID,
+	}
+
 	years, err := rml.GetRunningManYears()
 	if err != nil {
 		return nil, err

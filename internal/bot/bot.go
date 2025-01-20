@@ -46,7 +46,10 @@ func (b Bot) Run() {
 		if update.Message != nil {
 			switch update.Message.Command() {
 			case "browse":
-				bc := command.Browse{ChatID: update.Message.Chat.ID}
+				bc := command.Browse{
+					ChatID: update.Message.Chat.ID,
+				}
+
 				chat, err := bc.Process()
 				if err != nil {
 					b.Logger.Err(err).Msg("failed to process browse command")
