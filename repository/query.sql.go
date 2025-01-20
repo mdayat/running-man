@@ -74,6 +74,17 @@ func (q *Queries) GetRunningManLibraries(ctx context.Context) ([]int32, error) {
 	return items, nil
 }
 
+const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one
+SELECT price FROM running_man_video WHERE episode = $1
+`
+
+func (q *Queries) GetRunningManVideoPrice(ctx context.Context, episode int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getRunningManVideoPrice, episode)
+	var price int32
+	err := row.Scan(&price)
+	return price, err
+}
+
 const getRunningManVideosByYear = `-- name: GetRunningManVideosByYear :many
 SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC
 `
