@@ -15,11 +15,8 @@ Selamat datang di @RunningManSeriesBot! Dengan bot ini, kamu dapat mengelola dan
 
 /start - Selamat datang dan pengenalan
 /help - Dapatkan bantuan dan daftar perintah yang tersedia
-/browse - Tampilkan katalog episode
-/search [nomor_episode] - Cari episode tertentu
-/buy [nomor_episode] - Beli episode
-/checkout - Selesaikan pembelian dengan Telegram stars
-/mycollection - Tampilkan episode yang sudah dibeli
+/browse - Jelajahi episode Running Man
+/collection - Lihat koleksi video Running Man yang kamu miliki
 /feedback - Kirimkan umpan balik atau laporkan masalah
 `
 
