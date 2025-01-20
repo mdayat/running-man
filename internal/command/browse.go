@@ -18,6 +18,6 @@ func (b Browse) Process() (tg.Chattable, error) {
 	rml.Years = years
 
 	chat := tg.NewMessage(b.ChatID, callback.LibrariesTextMsg)
-	chat.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeEpisodes)
+	chat.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeVideos)
 	return chat, nil
 }

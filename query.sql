@@ -10,7 +10,7 @@ INSERT INTO "user" (id, first_name) VALUES ($1, $2);
 -- name: GetRunningManYears :many
 SELECT year FROM running_man_library ORDER BY year ASC;
 
--- name: GetRunningManVideosByYear :many
+-- name: GetRunningManEpisodesByYear :many
 SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC;
 
 -- name: GetRunningManVideoPrice :one

@@ -108,6 +108,6 @@ func (rml RunningManLibraries) Process() (tg.Chattable, error) {
 	}
 	rml.Years = years
 
-	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, LibrariesTextMsg, rml.GenInlineKeyboard(TypeEpisodes))
+	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, LibrariesTextMsg, rml.GenInlineKeyboard(TypeVideos))
 	return chat, nil
 }

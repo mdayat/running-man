@@ -101,27 +101,27 @@ func (b Bot) Run() {
 					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeLibraries)
 					continue
 				}
-			case callback.TypeEpisodes:
+			case callback.TypeVideos:
 				year, err := strconv.Atoi(splittedCallbackData[1])
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to convert running man year string to int")
+					b.Logger.Err(err).Msg("failed to convert year string to int")
 					continue
 				}
 
-				rme := callback.RunningManEpisodes{
+				rmv := callback.RunningManVideos{
 					Year:      int32(year),
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
 				}
 
-				chat, err := rme.Process()
+				chat, err := rmv.Process()
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to process running man episodes callback")
+					b.Logger.Err(err).Msgf("failed to process %s callback", callback.TypeVideos)
 					continue
 				}
 
 				if err := b.SendChat(chat); err != nil {
-					b.Logger.Err(err).Msg("failed to send updated chat for running man episodes inline keyboard")
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeVideos)
 					continue
 				}
 			case callback.TypeEpisode, callback.TypePurchase:

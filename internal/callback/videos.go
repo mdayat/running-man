@@ -15,28 +15,28 @@ import (
 )
 
 var (
-	TypeEpisodes    InlineKeyboardType = "episodes"
-	EpisodesTextMsg                    = "Pilih episode Running Man:"
+	TypeVideos    InlineKeyboardType = "videos"
+	VideosTextMsg                    = "Pilih episode Running Man:"
 )
 
-type RunningManEpisodes struct {
+type RunningManVideos struct {
 	Year      int32
 	ChatID    int64
 	MessageID int
 	Episodes  []int32
 }
 
-func (rme RunningManEpisodes) GetRunningManEpisodes() ([]int32, error) {
+func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(fmt.Sprintf("%d:%s", rme.Year, TypeEpisodes)))
+		item, err := txn.Get([]byte(fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return fmt.Errorf("failed to get running man episodes key: %w", err)
+			return fmt.Errorf("failed to get %s key: %w", TypeVideos, err)
 		}
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManVideosByYear(context.TODO(), rme.Year)
+				return services.Queries.GetRunningManEpisodesByYear(context.TODO(), rmv.Year)
 			}
 
 			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3))
@@ -49,9 +49,9 @@ func (rme RunningManEpisodes) GetRunningManEpisodes() ([]int32, error) {
 				return fmt.Errorf("failed to convert int32 of episodes to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(fmt.Sprintf("%d:%s", rme.Year, TypeEpisodes)), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)), entryVal).WithTTL(time.Hour)
 			if err := txn.SetEntry(entry); err != nil {
-				return fmt.Errorf("failed to set running man episodes key: %w", err)
+				return fmt.Errorf("failed to set %s key: %w", TypeVideos, err)
 			}
 
 			return nil
@@ -59,7 +59,7 @@ func (rme RunningManEpisodes) GetRunningManEpisodes() ([]int32, error) {
 
 		valCopy, err := item.ValueCopy(nil)
 		if err != nil {
-			return fmt.Errorf("failed to copy the value of episodes key: %w", err)
+			return fmt.Errorf("failed to copy the value of %s key: %w", TypeVideos, err)
 		}
 
 		episodes, err = converter.BytesToInt32Slice(valCopy)
@@ -77,16 +77,16 @@ func (rme RunningManEpisodes) GetRunningManEpisodes() ([]int32, error) {
 	return episodes, nil
 }
 
-func (rme RunningManEpisodes) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	numOfRowItems := 5
-	numOfRows := int(math.Ceil(float64(len(rme.Episodes) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(rmv.Episodes) / numOfRowItems)))
 
 	inlineKeyboardRows := make([][]tg.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
 
-	for _, v := range rme.Episodes {
+	for _, v := range rmv.Episodes {
 		btnText := fmt.Sprintf("%d", v)
-		btnData := fmt.Sprintf("%s:%d:%d", inlineKeyboardType, rme.Year, v)
+		btnData := fmt.Sprintf("%s:%d:%d", inlineKeyboardType, rmv.Year, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -106,13 +106,13 @@ func (rme RunningManEpisodes) GenInlineKeyboard(inlineKeyboardType InlineKeyboar
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rme RunningManEpisodes) Process() (tg.Chattable, error) {
-	episodes, err := rme.GetRunningManEpisodes()
+func (rmv RunningManVideos) Process() (tg.Chattable, error) {
+	episodes, err := rmv.GetRunningManEpisodes()
 	if err != nil {
 		return nil, err
 	}
-	rme.Episodes = episodes
+	rmv.Episodes = episodes
 
-	chat := tg.NewEditMessageTextAndMarkup(rme.ChatID, rme.MessageID, EpisodesTextMsg, rme.GenInlineKeyboard(TypeEpisode))
+	chat := tg.NewEditMessageTextAndMarkup(rmv.ChatID, rmv.MessageID, VideosTextMsg, rmv.GenInlineKeyboard(TypeEpisode))
 	return chat, nil
 }

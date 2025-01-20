@@ -29,7 +29,7 @@ type RunningManEpisode struct {
 func (rme RunningManEpisode) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(
 		tg.NewInlineKeyboardButtonData("Iya", fmt.Sprintf("%s:%d:%d", inlineKeyboardType, rme.Year, rme.Episode)),
-		tg.NewInlineKeyboardButtonData("Tidak", fmt.Sprintf("%s:%d", TypeEpisodes, rme.Year)),
+		tg.NewInlineKeyboardButtonData("Tidak", fmt.Sprintf("%s:%d", TypeVideos, rme.Year)),
 	))
 }
 

@@ -50,23 +50,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
-const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one
-SELECT price FROM running_man_video WHERE episode = $1
-`
-
-func (q *Queries) GetRunningManVideoPrice(ctx context.Context, episode int32) (int32, error) {
-	row := q.db.QueryRow(ctx, getRunningManVideoPrice, episode)
-	var price int32
-	err := row.Scan(&price)
-	return price, err
-}
-
-const getRunningManVideosByYear = `-- name: GetRunningManVideosByYear :many
+const getRunningManEpisodesByYear = `-- name: GetRunningManEpisodesByYear :many
 SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC
 `
 
-func (q *Queries) GetRunningManVideosByYear(ctx context.Context, runningManLibraryYear int32) ([]int32, error) {
-	rows, err := q.db.Query(ctx, getRunningManVideosByYear, runningManLibraryYear)
+func (q *Queries) GetRunningManEpisodesByYear(ctx context.Context, runningManLibraryYear int32) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getRunningManEpisodesByYear, runningManLibraryYear)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +72,17 @@ func (q *Queries) GetRunningManVideosByYear(ctx context.Context, runningManLibra
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one
+SELECT price FROM running_man_video WHERE episode = $1
+`
+
+func (q *Queries) GetRunningManVideoPrice(ctx context.Context, episode int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getRunningManVideoPrice, episode)
+	var price int32
+	err := row.Scan(&price)
+	return price, err
 }
 
 const getRunningManYears = `-- name: GetRunningManYears :many
