@@ -168,8 +168,8 @@ func main() {
 					UserID:       update.CallbackQuery.From.ID,
 					ChatID:       update.CallbackQuery.Message.Chat.ID,
 					MessageID:    update.CallbackQuery.Message.MessageID,
-					Year:         year,
-					Episode:      episode,
+					Year:         int32(year),
+					Episode:      int32(episode),
 					IsPurchasing: callbackType == callback.TypePurchase,
 				}
 

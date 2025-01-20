@@ -11,7 +11,7 @@ import (
 )
 
 var defaultMessage = `
-Selamat datang di @RunningManSeriesBot! Dengan bot ini, Anda dapat mengelola dan membeli episode lama dari "Running Man." Berikut adalah perintah yang dapat Anda gunakan:
+Selamat datang di @RunningManSeriesBot! Dengan bot ini, kamu dapat mengelola dan membeli episode lama dari "Running Man." Berikut adalah perintah yang dapat kamu gunakan:
 
 /start - Selamat datang dan pengenalan
 /help - Dapatkan bantuan dan daftar perintah yang tersedia
