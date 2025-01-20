@@ -124,36 +124,36 @@ func (b Bot) Run() {
 					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeVideos)
 					continue
 				}
-			case callback.TypeEpisode, callback.TypePurchase:
+			case callback.TypeVideo, callback.TypeInvoice:
 				year, err := strconv.Atoi(splittedCallbackData[1])
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to convert running man year string to int")
+					b.Logger.Err(err).Msg("failed to convert year string to int")
 					continue
 				}
 
 				episode, err := strconv.Atoi(splittedCallbackData[2])
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to convert running man episode string to int")
+					b.Logger.Err(err).Msg("failed to convert episode string to int")
 					continue
 				}
 
-				rme := callback.RunningManEpisode{
-					UserID:       update.CallbackQuery.From.ID,
-					ChatID:       update.CallbackQuery.Message.Chat.ID,
-					MessageID:    update.CallbackQuery.Message.MessageID,
-					Year:         int32(year),
-					Episode:      int32(episode),
-					IsPurchasing: callbackType == callback.TypePurchase,
+				rmv := callback.RunningManVideo{
+					UserID:        update.CallbackQuery.From.ID,
+					ChatID:        update.CallbackQuery.Message.Chat.ID,
+					MessageID:     update.CallbackQuery.Message.MessageID,
+					Year:          int32(year),
+					Episode:       int32(episode),
+					IsTypeInvoice: callbackType == callback.TypeInvoice,
 				}
 
-				chat, err := rme.Process()
+				chat, err := rmv.Process()
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to process running man episode callback")
+					b.Logger.Err(err).Msgf("failed to process %s callback", callback.TypeVideo)
 					continue
 				}
 
 				if err := b.SendChat(chat); err != nil {
-					b.Logger.Err(err).Msg("failed to send updated chat for running man episode inline keyboard")
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeVideo)
 					continue
 				}
 			default:

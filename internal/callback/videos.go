@@ -113,6 +113,6 @@ func (rmv RunningManVideos) Process() (tg.Chattable, error) {
 	}
 	rmv.Episodes = episodes
 
-	chat := tg.NewEditMessageTextAndMarkup(rmv.ChatID, rmv.MessageID, VideosTextMsg, rmv.GenInlineKeyboard(TypeEpisode))
+	chat := tg.NewEditMessageTextAndMarkup(rmv.ChatID, rmv.MessageID, VideosTextMsg, rmv.GenInlineKeyboard(TypeVideo))
 	return chat, nil
 }
