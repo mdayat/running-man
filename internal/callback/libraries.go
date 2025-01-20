@@ -15,27 +15,27 @@ import (
 )
 
 var (
-	TypeYears    InlineKeyboardType = "years"
-	YearsTextMsg                    = "Pilih tahun Running Man:"
+	TypeLibraries    InlineKeyboardType = "libraries"
+	LibrariesTextMsg                    = "Pilih tahun Running Man:"
 )
 
-type RunningManYears struct {
+type RunningManLibraries struct {
 	ChatID    int64
 	MessageID int
 	Years     []int32
 }
 
-func (rml RunningManYears) GetRunningManYears() ([]int32, error) {
+func (rml RunningManLibraries) GetRunningManYears() ([]int32, error) {
 	var years []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(TypeYears))
+		item, err := txn.Get([]byte(TypeLibraries))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return fmt.Errorf("failed to get running man years key: %w", err)
+			return fmt.Errorf("failed to get %s key: %w", TypeLibraries, err)
 		}
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManLibraries(context.TODO())
+				return services.Queries.GetRunningManYears(context.TODO())
 			}
 
 			years, err = retry.DoWithData(retryFunc, retry.Attempts(3))
@@ -48,9 +48,9 @@ func (rml RunningManYears) GetRunningManYears() ([]int32, error) {
 				return fmt.Errorf("failed to convert int32 of years to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(TypeYears), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(TypeLibraries), entryVal).WithTTL(time.Hour * 24)
 			if err := txn.SetEntry(entry); err != nil {
-				return fmt.Errorf("failed to set running man years key: %w", err)
+				return fmt.Errorf("failed to set %s key: %w", TypeLibraries, err)
 			}
 
 			return nil
@@ -58,7 +58,7 @@ func (rml RunningManYears) GetRunningManYears() ([]int32, error) {
 
 		valCopy, err := item.ValueCopy(nil)
 		if err != nil {
-			return fmt.Errorf("failed to copy the value of years key: %w", err)
+			return fmt.Errorf("failed to copy the value of %s key: %w", TypeLibraries, err)
 		}
 
 		years, err = converter.BytesToInt32Slice(valCopy)
@@ -76,7 +76,7 @@ func (rml RunningManYears) GetRunningManYears() ([]int32, error) {
 	return years, nil
 }
 
-func (rml RunningManYears) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
 	numOfRowItems := 3
 	numOfRows := int(math.Ceil(float64(len(rml.Years) / numOfRowItems)))
 
@@ -101,13 +101,13 @@ func (rml RunningManYears) GenInlineKeyboard(inlineKeyboardType InlineKeyboardTy
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rml RunningManYears) Process() (tg.Chattable, error) {
+func (rml RunningManLibraries) Process() (tg.Chattable, error) {
 	years, err := rml.GetRunningManYears()
 	if err != nil {
 		return nil, err
 	}
 	rml.Years = years
 
-	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, YearsTextMsg, rml.GenInlineKeyboard(TypeEpisodes))
+	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, LibrariesTextMsg, rml.GenInlineKeyboard(TypeEpisodes))
 	return chat, nil
 }

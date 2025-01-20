@@ -85,20 +85,20 @@ func (b Bot) Run() {
 			callbackType := callback.InlineKeyboardType(splittedCallbackData[0])
 
 			switch callbackType {
-			case callback.TypeYears:
-				rml := callback.RunningManYears{
+			case callback.TypeLibraries:
+				rml := callback.RunningManLibraries{
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
 				}
 
 				chat, err := rml.Process()
 				if err != nil {
-					b.Logger.Err(err).Msg("failed to process running man years callback")
+					b.Logger.Err(err).Msgf("failed to process %s callback", callback.TypeLibraries)
 					continue
 				}
 
 				if err := b.SendChat(chat); err != nil {
-					b.Logger.Err(err).Msg("failed to send updated chat for running man years inline keyboard")
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeLibraries)
 					continue
 				}
 			case callback.TypeEpisodes:

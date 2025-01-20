@@ -7,7 +7,7 @@ SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_
 -- name: CreateUser :exec
 INSERT INTO "user" (id, first_name) VALUES ($1, $2);
 
--- name: GetRunningManLibraries :many
+-- name: GetRunningManYears :many
 SELECT year FROM running_man_library ORDER BY year ASC;
 
 -- name: GetRunningManVideosByYear :many

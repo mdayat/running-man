@@ -100,7 +100,7 @@ func (rme RunningManEpisodes) GenInlineKeyboard(inlineKeyboardType InlineKeyboar
 	}
 
 	inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(
-		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeYears, "")),
+		tg.NewInlineKeyboardButtonData("Kembali", fmt.Sprintf("%s:%s", TypeLibraries, "")),
 	))
 
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)

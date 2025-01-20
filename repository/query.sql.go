@@ -50,30 +50,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
-const getRunningManLibraries = `-- name: GetRunningManLibraries :many
-SELECT year FROM running_man_library ORDER BY year ASC
-`
-
-func (q *Queries) GetRunningManLibraries(ctx context.Context) ([]int32, error) {
-	rows, err := q.db.Query(ctx, getRunningManLibraries)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int32
-	for rows.Next() {
-		var year int32
-		if err := rows.Scan(&year); err != nil {
-			return nil, err
-		}
-		items = append(items, year)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one
 SELECT price FROM running_man_video WHERE episode = $1
 `
@@ -102,6 +78,30 @@ func (q *Queries) GetRunningManVideosByYear(ctx context.Context, runningManLibra
 			return nil, err
 		}
 		items = append(items, episode)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRunningManYears = `-- name: GetRunningManYears :many
+SELECT year FROM running_man_library ORDER BY year ASC
+`
+
+func (q *Queries) GetRunningManYears(ctx context.Context) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getRunningManYears)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var year int32
+		if err := rows.Scan(&year); err != nil {
+			return nil, err
+		}
+		items = append(items, year)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
