@@ -50,6 +50,12 @@ func main() {
 	}
 	defer db.Close()
 
+	badger, err := services.NewBadger()
+	if err != nil {
+		logger.Fatal().Err(err).Send()
+	}
+	defer badger.Close()
+
 	bot, err := tg.NewBotAPI(env.BOT_TOKEN)
 	if err != nil {
 		logger.Fatal().Err(err).Send()
@@ -130,7 +136,7 @@ func main() {
 				}
 
 				rme := callback.RunningManEpisodes{
-					Year:      year,
+					Year:      int32(year),
 					ChatID:    update.CallbackQuery.Message.Chat.ID,
 					MessageID: update.CallbackQuery.Message.MessageID,
 				}
