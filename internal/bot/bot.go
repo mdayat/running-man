@@ -57,6 +57,22 @@ func (b Bot) Run() {
 					b.Logger.Err(err).Msg("failed to send chat of browse command")
 					continue
 				}
+			case "collection":
+				cc := command.Collection{
+					ChatID: update.Message.Chat.ID,
+					UserID: update.Message.From.ID,
+				}
+
+				chat, err := cc.Process()
+				if err != nil {
+					b.Logger.Err(err).Msg("failed to process collection command")
+					continue
+				}
+
+				if err := b.SendChat(chat); err != nil {
+					b.Logger.Err(err).Msg("failed to send chat of collection command")
+					continue
+				}
 			case "start", "help":
 				fallthrough
 			default:

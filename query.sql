@@ -4,6 +4,9 @@ SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);
 -- name: CheckUserVideo :one
 SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2);
 
+-- name: GetEpisodesFromUserVideoCollection :many
+SELECT running_man_video_episode FROM collection WHERE user_id = $1;
+
 -- name: CreateUser :exec
 INSERT INTO "user" (id, first_name) VALUES ($1, $2);
 

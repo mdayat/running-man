@@ -50,6 +50,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
+const getEpisodesFromUserVideoCollection = `-- name: GetEpisodesFromUserVideoCollection :many
+SELECT running_man_video_episode FROM collection WHERE user_id = $1
+`
+
+func (q *Queries) GetEpisodesFromUserVideoCollection(ctx context.Context, userID int64) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getEpisodesFromUserVideoCollection, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var running_man_video_episode int32
+		if err := rows.Scan(&running_man_video_episode); err != nil {
+			return nil, err
+		}
+		items = append(items, running_man_video_episode)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRunningManEpisodesByYear = `-- name: GetRunningManEpisodesByYear :many
 SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC
 `
