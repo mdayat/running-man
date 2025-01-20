@@ -33,7 +33,7 @@ func (rmv RunningManVideo) GenInlineKeyboard(inlineKeyboardType InlineKeyboardTy
 	))
 }
 
-type InvoicePayload struct {
+type invoicePayload struct {
 	UserID  int64 `json:"user_id"`
 	Episode int32 `json:"episode"`
 	Amount  int
@@ -54,7 +54,7 @@ func (rmv RunningManVideo) GenInvoice() (tg.Chattable, error) {
 	tax := int(math.Ceil(float64(price) * 0.11))
 	priceAfterTax := int(price) + tax
 
-	payload := InvoicePayload{
+	payload := invoicePayload{
 		UserID:  rmv.UserID,
 		Episode: rmv.Episode,
 		Amount:  priceAfterTax,
@@ -82,8 +82,8 @@ func (rmv RunningManVideo) GenInvoice() (tg.Chattable, error) {
 
 func (rmv RunningManVideo) Process() (tg.Chattable, error) {
 	var chat tg.Chattable
-	if rmv.IsTypeInvoice == true {
-		retryFunc := func() (_ bool, err error) {
+	if rmv.IsTypeInvoice {
+		retryFunc := func() (bool, error) {
 			return services.Queries.CheckUserVideo(context.TODO(), repository.CheckUserVideoParams{
 				UserID:                 rmv.UserID,
 				RunningManVideoEpisode: rmv.Episode,
@@ -91,6 +91,10 @@ func (rmv RunningManVideo) Process() (tg.Chattable, error) {
 		}
 
 		isUserHasVideo, err := retry.DoWithData(retryFunc, retry.Attempts(3))
+		if err != nil {
+			return nil, fmt.Errorf("failed to check user video: %w", err)
+		}
+
 		if isUserHasVideo {
 			text := fmt.Sprintf("Ooops... kamu tidak bisa membeli video Running Man episode %d karena kamu telah memilikinya.", rmv.Episode)
 			chat := tg.NewMessage(rmv.ChatID, text)
