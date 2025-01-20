@@ -29,9 +29,10 @@ type RunningManVideos struct {
 func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)))
+		runningManVideosKey := fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)
+		item, err := txn.Get([]byte(runningManVideosKey))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return fmt.Errorf("failed to get %s key: %w", TypeVideos, err)
+			return fmt.Errorf("failed to get %s key: %w", runningManVideosKey, err)
 		}
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
@@ -49,9 +50,9 @@ func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 				return fmt.Errorf("failed to convert int32 of episodes to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(runningManVideosKey), entryVal).WithTTL(time.Hour)
 			if err := txn.SetEntry(entry); err != nil {
-				return fmt.Errorf("failed to set %s key: %w", TypeVideos, err)
+				return fmt.Errorf("failed to set %s key: %w", runningManVideosKey, err)
 			}
 
 			return nil
@@ -59,7 +60,7 @@ func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 
 		valCopy, err := item.ValueCopy(nil)
 		if err != nil {
-			return fmt.Errorf("failed to copy the value of %s key: %w", TypeVideos, err)
+			return fmt.Errorf("failed to copy the value of %s key: %w", runningManVideosKey, err)
 		}
 
 		episodes, err = converter.BytesToInt32Slice(valCopy)

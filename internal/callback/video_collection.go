@@ -26,14 +26,10 @@ type VideoCollection struct {
 	Episodes  []int32
 }
 
-func (vc VideoCollection) GenVideoCollectionKey(inlineKeyboardType InlineKeyboardType) string {
-	return fmt.Sprintf("%d:%s", vc.UserID, inlineKeyboardType)
-}
-
 func (vc VideoCollection) GetEpisodesFromUserVideoCollection() ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
-		videoCollectionKey := vc.GenVideoCollectionKey(TypeVideoCollection)
+		videoCollectionKey := fmt.Sprintf("%d:%s", vc.UserID, TypeVideoCollection)
 		item, err := txn.Get([]byte(videoCollectionKey))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
 			return fmt.Errorf("failed to get %s key: %w", videoCollectionKey, err)
