@@ -18,3 +18,11 @@ SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER 
 
 -- name: GetRunningManVideoPrice :one
 SELECT price FROM running_man_video WHERE episode = $1;
+
+-- name: GetRunningManVideoAndLibraryByEpisode :one
+SELECT
+  v.id AS running_man_video_id,
+  l.id AS running_man_library_id,
+  l.year
+FROM running_man_video v JOIN running_man_library l ON v.running_man_library_year = l.year
+WHERE v.episode = $1;

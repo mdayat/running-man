@@ -167,12 +167,53 @@ func (b Bot) Run() {
 
 				chat, err := rmv.Process()
 				if err != nil {
-					b.Logger.Err(err).Msgf("failed to process %s callback", callback.TypeVideo)
+					b.Logger.Err(err).Msgf("failed to process %s callback", callbackType)
 					continue
 				}
 
 				if err := b.SendChat(chat); err != nil {
-					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeVideo)
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callbackType)
+					continue
+				}
+			case callback.TypeVideoCollection:
+				vc := callback.VideoCollection{
+					ChatID:    update.CallbackQuery.Message.Chat.ID,
+					UserID:    update.CallbackQuery.From.ID,
+					MessageID: update.CallbackQuery.Message.MessageID,
+				}
+
+				chat, err := vc.Process()
+				if err != nil {
+					b.Logger.Err(err).Msgf("failed to process %s callback", callback.TypeVideoCollection)
+					continue
+				}
+
+				if err := b.SendChat(chat); err != nil {
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callback.TypeVideoCollection)
+					continue
+				}
+			case callback.TypeVideoCollectionDetail, callback.TypeVideoLink:
+				episode, err := strconv.Atoi(splittedCallbackData[1])
+				if err != nil {
+					b.Logger.Err(err).Msg("failed to convert episode string to int")
+					continue
+				}
+
+				vcd := callback.VideoCollectionDetail{
+					ChatID:          update.CallbackQuery.Message.Chat.ID,
+					MessageID:       update.CallbackQuery.Message.MessageID,
+					Episode:         int32(episode),
+					IsTypeVideoLink: callbackType == callback.TypeVideoLink,
+				}
+
+				chat, err := vcd.Process()
+				if err != nil {
+					b.Logger.Err(err).Msgf("failed to process %s callback", callbackType)
+					continue
+				}
+
+				if err := b.SendChat(chat); err != nil {
+					b.Logger.Err(err).Msgf("failed to send updated chat for %s inline keyboard", callbackType)
 					continue
 				}
 			default:

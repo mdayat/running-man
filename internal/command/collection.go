@@ -23,6 +23,6 @@ func (c Collection) Process() (tg.Chattable, error) {
 	vc.Episodes = episodes
 
 	chat := tg.NewMessage(c.ChatID, callback.VideoCollectionTextMsg)
-	chat.ReplyMarkup = vc.GenInlineKeyboard("TODO")
+	chat.ReplyMarkup = vc.GenInlineKeyboard(callback.TypeVideoCollectionDetail)
 	return chat, nil
 }

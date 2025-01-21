@@ -7,6 +7,8 @@ package repository
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const checkUserExistence = `-- name: CheckUserExistence :one
@@ -96,6 +98,28 @@ func (q *Queries) GetRunningManEpisodesByYear(ctx context.Context, runningManLib
 		return nil, err
 	}
 	return items, nil
+}
+
+const getRunningManVideoAndLibraryByEpisode = `-- name: GetRunningManVideoAndLibraryByEpisode :one
+SELECT
+  v.id AS running_man_video_id,
+  l.id AS running_man_library_id,
+  l.year
+FROM running_man_video v JOIN running_man_library l ON v.running_man_library_year = l.year
+WHERE v.episode = $1
+`
+
+type GetRunningManVideoAndLibraryByEpisodeRow struct {
+	RunningManVideoID   pgtype.UUID `json:"running_man_video_id"`
+	RunningManLibraryID int64       `json:"running_man_library_id"`
+	Year                int32       `json:"year"`
+}
+
+func (q *Queries) GetRunningManVideoAndLibraryByEpisode(ctx context.Context, episode int32) (GetRunningManVideoAndLibraryByEpisodeRow, error) {
+	row := q.db.QueryRow(ctx, getRunningManVideoAndLibraryByEpisode, episode)
+	var i GetRunningManVideoAndLibraryByEpisodeRow
+	err := row.Scan(&i.RunningManVideoID, &i.RunningManLibraryID, &i.Year)
+	return i, err
 }
 
 const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one

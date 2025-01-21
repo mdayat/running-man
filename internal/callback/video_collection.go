@@ -110,6 +110,6 @@ func (vc VideoCollection) Process() (tg.Chattable, error) {
 	}
 	vc.Episodes = episodes
 
-	chat := tg.NewEditMessageTextAndMarkup(vc.ChatID, vc.MessageID, VideoCollectionTextMsg, vc.GenInlineKeyboard("TOOD"))
+	chat := tg.NewEditMessageTextAndMarkup(vc.ChatID, vc.MessageID, VideoCollectionTextMsg, vc.GenInlineKeyboard(TypeVideoCollectionDetail))
 	return chat, nil
 }
