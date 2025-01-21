@@ -49,7 +49,7 @@ CREATE TABLE invoice (
   running_man_video_episode INT NOT NULL,
   amount INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  expired_at TIMESTAMPTZ,
+  expired_at TIMESTAMPTZ NOT NULL,
 
   CONSTRAINT fk_user_invoice
     FOREIGN KEY (user_id)
