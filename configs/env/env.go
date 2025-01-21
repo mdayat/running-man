@@ -16,7 +16,7 @@ var (
 	DIRECT_EMBED_BASE_URL string
 )
 
-func New() error {
+func Load() error {
 	err := godotenv.Load()
 	if err != nil {
 		return err

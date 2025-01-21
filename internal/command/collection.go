@@ -1,28 +1,44 @@
 package command
 
 import (
-	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"context"
+
+	"github.com/avast/retry-go/v4"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/mdayat/running-man/internal/callback"
+	"github.com/rs/zerolog/log"
 )
 
-type Collection struct {
-	ChatID int64
-	UserID int64
-}
-
-func (c Collection) Process() (tg.Chattable, error) {
+func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	logger := log.Ctx(ctx).With().Logger()
 	vc := callback.VideoCollection{
-		ChatID: c.ChatID,
-		UserID: c.UserID,
+		ChatID: update.Message.Chat.ID,
+		UserID: update.Message.From.ID,
 	}
 
 	episodes, err := vc.GetEpisodesFromUserVideoCollection()
 	if err != nil {
-		return nil, err
+		logger.Err(err).Send()
+		return
 	}
 	vc.Episodes = episodes
 
-	chat := tg.NewMessage(c.ChatID, callback.VideoCollectionTextMsg)
-	chat.ReplyMarkup = vc.GenInlineKeyboard(callback.TypeVideoCollectionDetail)
-	return chat, nil
+	_, err = retry.DoWithData(
+		func() (*models.Message, error) {
+			return b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID:      update.Message.Chat.ID,
+				Text:        callback.VideoCollectionTextMsg,
+				ParseMode:   models.ParseModeHTML,
+				ReplyMarkup: vc.GenInlineKeyboard(callback.TypeVideoCollectionDetail),
+			})
+		},
+		retry.Attempts(3),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		logger.Err(err).Msg("failed to send collection command message")
+		return
+	}
 }
