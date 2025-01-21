@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkInvoiceExpiration = `-- name: CheckInvoiceExpiration :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW())
+`
+
+type CheckInvoiceExpirationParams struct {
+	UserID                 int64 `json:"user_id"`
+	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
+}
+
+func (q *Queries) CheckInvoiceExpiration(ctx context.Context, arg CheckInvoiceExpirationParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkInvoiceExpiration, arg.UserID, arg.RunningManVideoEpisode)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const checkUserExistence = `-- name: CheckUserExistence :one
 SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1)
 `
@@ -36,6 +52,29 @@ func (q *Queries) CheckUserVideo(ctx context.Context, arg CheckUserVideoParams) 
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const createInvoice = `-- name: CreateInvoice :exec
+INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at) VALUES ($1, $2, $3, $4, $5)
+`
+
+type CreateInvoiceParams struct {
+	ID                     pgtype.UUID        `json:"id"`
+	UserID                 int64              `json:"user_id"`
+	RunningManVideoEpisode int32              `json:"running_man_video_episode"`
+	Amount                 int32              `json:"amount"`
+	ExpiredAt              pgtype.Timestamptz `json:"expired_at"`
+}
+
+func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) error {
+	_, err := q.db.Exec(ctx, createInvoice,
+		arg.ID,
+		arg.UserID,
+		arg.RunningManVideoEpisode,
+		arg.Amount,
+		arg.ExpiredAt,
+	)
+	return err
 }
 
 const createUser = `-- name: CreateUser :exec

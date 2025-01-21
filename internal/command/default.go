@@ -28,7 +28,7 @@ type Default struct {
 
 func (d Default) Process() (tg.Chattable, error) {
 	isUserExist, err := retry.DoWithData(
-		func() (_ bool, err error) {
+		func() (bool, error) {
 			return services.Queries.CheckUserExistence(context.TODO(), d.UserID)
 		},
 		retry.Attempts(3),

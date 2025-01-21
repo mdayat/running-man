@@ -39,11 +39,7 @@ func (b Bot) Run() {
 	updates := b.GetUpdatesChan(updateConfig)
 
 	for update := range updates {
-		if update.Message != nil && !update.Message.IsCommand() {
-			continue
-		}
-
-		if update.Message != nil {
+		if update.Message != nil && update.Message.IsCommand() {
 			switch update.Message.Command() {
 			case "browse":
 				bc := command.Browse{

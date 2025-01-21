@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/avast/retry-go/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mdayat/running-man/configs/services"
 	"github.com/mdayat/running-man/repository"
 )
@@ -34,14 +37,38 @@ func (rmv RunningManVideo) GenInlineKeyboard(inlineKeyboardType InlineKeyboardTy
 }
 
 type invoicePayload struct {
-	UserID  int64 `json:"user_id"`
-	Episode int32 `json:"episode"`
-	Amount  int
+	ID      string `json:"id"`
+	UserID  int64  `json:"user_id"`
+	Episode int32  `json:"episode"`
 }
 
 func (rmv RunningManVideo) GenInvoice() (tg.Chattable, error) {
+	isInvoiceUnexpired, err := retry.DoWithData(
+		func() (bool, error) {
+			return services.Queries.CheckInvoiceExpiration(context.TODO(), repository.CheckInvoiceExpirationParams{
+				UserID:                 rmv.UserID,
+				RunningManVideoEpisode: rmv.Episode,
+			})
+		},
+		retry.Attempts(3),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to check invoice expiration: %w", err)
+	}
+
+	if isInvoiceUnexpired {
+		text := fmt.Sprintf(
+			"Tidak dapat membuat tagihan untuk pembelian Running Man episode %d karena kamu telah memiliki tagihan yang masih valid.\n\nGunakan tagihan tersebut untuk melakukan pembayaran.",
+			rmv.Episode,
+		)
+
+		msg := tg.NewMessage(rmv.ChatID, text)
+		return msg, nil
+	}
+
 	price, err := retry.DoWithData(
-		func() (_ int32, err error) {
+		func() (int32, error) {
 			return services.Queries.GetRunningManVideoPrice(context.TODO(), rmv.Episode)
 		},
 		retry.Attempts(3),
@@ -54,10 +81,11 @@ func (rmv RunningManVideo) GenInvoice() (tg.Chattable, error) {
 	tax := int(math.Ceil(float64(price) * 0.11))
 	priceAfterTax := int(price) + tax
 
+	invoiceUUID := uuid.New()
 	payload := invoicePayload{
+		ID:      invoiceUUID.String(),
 		UserID:  rmv.UserID,
 		Episode: rmv.Episode,
-		Amount:  priceAfterTax,
 	}
 
 	payloadJSON, err := json.Marshal(payload)
@@ -65,17 +93,48 @@ func (rmv RunningManVideo) GenInvoice() (tg.Chattable, error) {
 		return nil, fmt.Errorf("failed to marshal invoice payload: %w", err)
 	}
 
+	title := fmt.Sprintf("Running Man Episode %d", rmv.Episode)
+	description := fmt.Sprintf(
+		"Pembelian Running Man episode %d (%d), harga sudah termasuk pajak. Segera lakukan pembayaran karena tagihan akan invalid setelah 1 jam.",
+		rmv.Episode,
+		rmv.Year,
+	)
+
+	prices := []tg.LabeledPrice{
+		{
+			Label:  title,
+			Amount: priceAfterTax,
+		},
+	}
+
 	invoice := tg.NewInvoice(
 		rmv.ChatID,
-		fmt.Sprintf("Running Man Episode %d", rmv.Episode),
-		fmt.Sprintf("Pembelian Running Man episode %d (%d), harga termasuk pajak.", rmv.Episode, rmv.Year),
+		title,
+		description,
 		string(payloadJSON),
 		"",
-		"start_param_unique_v1",
+		"no_pay",
 		"XTR",
-		[]tg.LabeledPrice{{Label: "XTR", Amount: payload.Amount}},
+		prices,
 	)
 	invoice.SuggestedTipAmounts = []int{}
+
+	err = retry.Do(
+		func() error {
+			return services.Queries.CreateInvoice(context.TODO(), repository.CreateInvoiceParams{
+				ID:                     pgtype.UUID{Bytes: invoiceUUID, Valid: true},
+				UserID:                 payload.UserID,
+				RunningManVideoEpisode: payload.Episode,
+				Amount:                 int32(priceAfterTax),
+				ExpiredAt:              pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+			})
+		},
+		retry.Attempts(3),
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create invoice: %w", err)
+	}
 
 	return invoice, nil
 }

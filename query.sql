@@ -26,3 +26,9 @@ SELECT
   l.year
 FROM running_man_video v JOIN running_man_library l ON v.running_man_library_year = l.year
 WHERE v.episode = $1;
+
+-- name: CheckInvoiceExpiration :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW());
+
+-- name: CreateInvoice :exec
+INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at) VALUES ($1, $2, $3, $4, $5);
