@@ -43,22 +43,42 @@ CREATE TABLE collection (
     ON DELETE CASCADE
 );
 
-CREATE TABLE transaction (
+CREATE TABLE invoice (
   id UUID PRIMARY KEY,
   user_id BIGINT NOT NULL,
   running_man_video_episode INT NOT NULL,
   amount INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  expired_at TIMESTAMPTZ,
 
-  CONSTRAINT fk_user_transaction
+  CONSTRAINT fk_user_invoice
     FOREIGN KEY (user_id)
     REFERENCES "user" (id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_video_transaction
+  CONSTRAINT fk_video_invoice
     FOREIGN KEY (running_man_video_episode)
     REFERENCES running_man_video (episode)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE
+);
+
+CREATE TABLE payment (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  invoice_id UUID UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+  CONSTRAINT fk_user_payment
+    FOREIGN KEY (user_id)
+    REFERENCES "user" (id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_invoice_payment
+    FOREIGN KEY (invoice_id)
+    REFERENCES invoice (id)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );

@@ -13,6 +13,22 @@ type Collection struct {
 	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
 }
 
+type Invoice struct {
+	ID                     pgtype.UUID        `json:"id"`
+	UserID                 int64              `json:"user_id"`
+	RunningManVideoEpisode int32              `json:"running_man_video_episode"`
+	Amount                 int32              `json:"amount"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	ExpiredAt              pgtype.Timestamptz `json:"expired_at"`
+}
+
+type Payment struct {
+	ID        string             `json:"id"`
+	UserID    int64              `json:"user_id"`
+	InvoiceID pgtype.UUID        `json:"invoice_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type RunningManLibrary struct {
 	ID        int64              `json:"id"`
 	Year      int32              `json:"year"`
@@ -25,14 +41,6 @@ type RunningManVideo struct {
 	Episode               int32              `json:"episode"`
 	Price                 int32              `json:"price"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
-}
-
-type Transaction struct {
-	ID                     pgtype.UUID        `json:"id"`
-	UserID                 int64              `json:"user_id"`
-	RunningManVideoEpisode int32              `json:"running_man_video_episode"`
-	Amount                 int32              `json:"amount"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 }
 
 type User struct {
