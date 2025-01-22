@@ -57,9 +57,8 @@ func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
 			return b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID:    update.Message.Chat.ID,
-				Text:      text,
-				ParseMode: models.ParseModeHTML,
+				ChatID: update.Message.Chat.ID,
+				Text:   text,
 			})
 		},
 		retry.Attempts(3),

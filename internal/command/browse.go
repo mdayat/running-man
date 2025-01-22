@@ -13,10 +13,11 @@ import (
 func BrowseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	logger := log.Ctx(ctx).With().Logger()
 	rml := callback.RunningManLibraries{
-		ChatID: update.Message.Chat.ID,
+		ChatID:    update.Message.Chat.ID,
+		MessageID: update.Message.ID,
 	}
 
-	years, err := rml.GetRunningManYears()
+	years, err := rml.GetRunningManYears(ctx)
 	if err != nil {
 		logger.Err(err).Send()
 		return
@@ -26,9 +27,8 @@ func BrowseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
 			return b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID:      update.Message.Chat.ID,
+				ChatID:      rml.ChatID,
 				Text:        callback.LibrariesTextMsg,
-				ParseMode:   models.ParseModeHTML,
 				ReplyMarkup: rml.GenInlineKeyboard(callback.TypeVideos),
 			})
 		},

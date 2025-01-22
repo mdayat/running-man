@@ -13,8 +13,9 @@ import (
 func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	logger := log.Ctx(ctx).With().Logger()
 	vc := callback.VideoCollection{
-		ChatID: update.Message.Chat.ID,
-		UserID: update.Message.From.ID,
+		ChatID:    update.Message.Chat.ID,
+		UserID:    update.Message.From.ID,
+		MessageID: update.Message.ID,
 	}
 
 	episodes, err := vc.GetEpisodesFromUserVideoCollection()
@@ -27,9 +28,8 @@ func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
 			return b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID:      update.Message.Chat.ID,
+				ChatID:      vc.ChatID,
 				Text:        callback.VideoCollectionTextMsg,
-				ParseMode:   models.ParseModeHTML,
 				ReplyMarkup: vc.GenInlineKeyboard(callback.TypeVideoCollectionDetail),
 			})
 		},
