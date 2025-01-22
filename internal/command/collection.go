@@ -18,7 +18,7 @@ func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		MessageID: update.Message.ID,
 	}
 
-	episodes, err := vc.GetEpisodesFromUserVideoCollection()
+	episodes, err := vc.GetEpisodesFromUserVideoCollection(ctx)
 	if err != nil {
 		logger.Err(err).Send()
 		return
@@ -30,7 +30,7 @@ func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			return b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID:      vc.ChatID,
 				Text:        callback.VideoCollectionTextMsg,
-				ReplyMarkup: vc.GenInlineKeyboard(callback.TypeVideoCollectionDetail),
+				ReplyMarkup: vc.GenInlineKeyboard(callback.TypeVideoCollectionItem),
 			})
 		},
 		retry.Attempts(3),

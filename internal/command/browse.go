@@ -29,7 +29,7 @@ func BrowseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			return b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID:      rml.ChatID,
 				Text:        callback.LibrariesTextMsg,
-				ReplyMarkup: rml.GenInlineKeyboard(callback.TypeVideos),
+				ReplyMarkup: rml.GenInlineKeyboard(callback.TypeVideoList),
 			})
 		},
 		retry.Attempts(3),

@@ -20,29 +20,29 @@ import (
 )
 
 var (
-	TypeVideos    = "videos"
-	VideosTextMsg = "Pilih episode Running Man:"
+	TypeVideoList    = "video_list"
+	VideoListTextMsg = "Pilih episode Running Man:"
 )
 
-type RunningManVideos struct {
+type VideoList struct {
 	Year      int32
 	ChatID    int64
 	MessageID int
 	Episodes  []int32
 }
 
-func (rmv RunningManVideos) GetRunningManEpisodes(ctx context.Context) ([]int32, error) {
+func (vl VideoList) GetRunningManEpisodes(ctx context.Context) ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
-		runningManVideosKey := fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)
-		item, err := txn.Get([]byte(runningManVideosKey))
+		videoListKey := fmt.Sprintf("%d:%s", vl.Year, TypeVideoList)
+		item, err := txn.Get([]byte(videoListKey))
 		if err != nil && !errors.Is(err, badger.ErrKeyNotFound) {
-			return fmt.Errorf("failed to get %s key: %w", runningManVideosKey, err)
+			return fmt.Errorf("failed to get %s key: %w", videoListKey, err)
 		}
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManEpisodesByYear(ctx, rmv.Year)
+				return services.Queries.GetRunningManEpisodesByYear(ctx, vl.Year)
 			}
 
 			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3), retry.LastErrorOnly(true))
@@ -55,9 +55,9 @@ func (rmv RunningManVideos) GetRunningManEpisodes(ctx context.Context) ([]int32,
 				return fmt.Errorf("failed to convert int32 of episodes to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(runningManVideosKey), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(videoListKey), entryVal).WithTTL(time.Hour)
 			if err := txn.SetEntry(entry); err != nil {
-				return fmt.Errorf("failed to set %s key: %w", runningManVideosKey, err)
+				return fmt.Errorf("failed to set %s key: %w", videoListKey, err)
 			}
 
 			return nil
@@ -65,7 +65,7 @@ func (rmv RunningManVideos) GetRunningManEpisodes(ctx context.Context) ([]int32,
 
 		valCopy, err := item.ValueCopy(nil)
 		if err != nil {
-			return fmt.Errorf("failed to copy the value of %s key: %w", runningManVideosKey, err)
+			return fmt.Errorf("failed to copy the value of %s key: %w", videoListKey, err)
 		}
 
 		episodes, err = converter.BytesToInt32Slice(valCopy)
@@ -83,16 +83,16 @@ func (rmv RunningManVideos) GetRunningManEpisodes(ctx context.Context) ([]int32,
 	return episodes, nil
 }
 
-func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
+func (vl VideoList) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
 	numOfRowItems := 5
-	numOfRows := int(math.Ceil(float64(len(rmv.Episodes) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(vl.Episodes) / numOfRowItems)))
 
 	inlineKeyboardRows := make([][]tg.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
 
-	for _, v := range rmv.Episodes {
+	for _, v := range vl.Episodes {
 		btnText := fmt.Sprintf("%d", v)
-		btnData := fmt.Sprintf("%s:%d,%d", inlineKeyboardType, rmv.Year, v)
+		btnData := fmt.Sprintf("%s:%d,%d", inlineKeyboardType, vl.Year, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -112,7 +112,7 @@ func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType string) tg.Inli
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func VideosHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func VideoListHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	logger := log.Ctx(ctx).With().Logger()
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
@@ -125,26 +125,26 @@ func VideosHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	rmv := RunningManVideos{
+	vl := VideoList{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
 		Year:      int32(year),
 	}
 
-	episodes, err := rmv.GetRunningManEpisodes(ctx)
+	episodes, err := vl.GetRunningManEpisodes(ctx)
 	if err != nil {
 		logger.Err(err).Send()
 		return
 	}
-	rmv.Episodes = episodes
+	vl.Episodes = episodes
 
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
 			return b.EditMessageText(ctx, &bot.EditMessageTextParams{
-				ChatID:      rmv.ChatID,
-				MessageID:   rmv.MessageID,
-				Text:        VideosTextMsg,
-				ReplyMarkup: rmv.GenInlineKeyboard(TypeVideo),
+				ChatID:      vl.ChatID,
+				MessageID:   vl.MessageID,
+				Text:        VideoListTextMsg,
+				ReplyMarkup: vl.GenInlineKeyboard(TypeVideoItem),
 			})
 		},
 		retry.Attempts(3),
@@ -152,7 +152,7 @@ func VideosHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	)
 
 	if err != nil {
-		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideos)
+		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideoList)
 		return
 	}
 }

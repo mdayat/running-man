@@ -13,23 +13,23 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var TypeVideo = "video"
+var TypeVideoItem = "video_item"
 
-type RunningManVideo struct {
+type VideoItem struct {
 	ChatID    int64
 	MessageID int
 	Year      int32
 	Episode   int32
 }
 
-func (rmv RunningManVideo) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
+func (vi VideoItem) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
 	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(
-		tg.NewInlineKeyboardButtonData("Iya", fmt.Sprintf("%s:%d,%d", inlineKeyboardType, rmv.Year, rmv.Episode)),
-		tg.NewInlineKeyboardButtonData("Tidak", fmt.Sprintf("%s:%d", TypeVideos, rmv.Year)),
+		tg.NewInlineKeyboardButtonData("Iya", fmt.Sprintf("%s:%d,%d", inlineKeyboardType, vi.Year, vi.Episode)),
+		tg.NewInlineKeyboardButtonData("Tidak", fmt.Sprintf("%s:%d", TypeVideoList, vi.Year)),
 	))
 }
 
-func VideoHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func VideoItemHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	logger := log.Ctx(ctx).With().Logger()
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
@@ -49,21 +49,21 @@ func VideoHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	rmv := RunningManVideo{
+	vi := VideoItem{
 		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
 		Year:      int32(year),
 		Episode:   int32(episode),
 	}
 
-	text := fmt.Sprintf("Apakah kamu ingin membeli Running Man episode %d?", rmv.Episode)
+	text := fmt.Sprintf("Apakah kamu ingin membeli Running Man episode %d?", vi.Episode)
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
 			return b.EditMessageText(ctx, &bot.EditMessageTextParams{
-				ChatID:      rmv.ChatID,
-				MessageID:   rmv.MessageID,
+				ChatID:      vi.ChatID,
+				MessageID:   vi.MessageID,
 				Text:        text,
-				ReplyMarkup: rmv.GenInlineKeyboard(TypeInvoice),
+				ReplyMarkup: vi.GenInlineKeyboard(TypeInvoice),
 			})
 		},
 		retry.Attempts(3),
@@ -71,7 +71,7 @@ func VideoHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	)
 
 	if err != nil {
-		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideo)
+		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideoItem)
 		return
 	}
 }

@@ -10,13 +10,16 @@ import (
 	"github.com/avast/retry-go/v4"
 	badger "github.com/dgraph-io/badger/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/mdayat/running-man/configs/services"
 	"github.com/mdayat/running-man/internal/converter"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	TypeVideoCollection    InlineKeyboardType = "video_collection"
-	VideoCollectionTextMsg                    = "Pilih episode Running Man dari koleksi video kamu:"
+	TypeVideoCollection    = "video_collection"
+	VideoCollectionTextMsg = "Pilih episode Running Man dari koleksi video kamu:"
 )
 
 type VideoCollection struct {
@@ -26,7 +29,7 @@ type VideoCollection struct {
 	Episodes  []int32
 }
 
-func (vc VideoCollection) GetEpisodesFromUserVideoCollection() ([]int32, error) {
+func (vc VideoCollection) GetEpisodesFromUserVideoCollection(ctx context.Context) ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
 		videoCollectionKey := fmt.Sprintf("%d:%s", vc.UserID, TypeVideoCollection)
@@ -37,10 +40,10 @@ func (vc VideoCollection) GetEpisodesFromUserVideoCollection() ([]int32, error) 
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetEpisodesFromUserVideoCollection(context.TODO(), vc.UserID)
+				return services.Queries.GetEpisodesFromUserVideoCollection(ctx, vc.UserID)
 			}
 
-			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3))
+			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3), retry.LastErrorOnly(true))
 			if err != nil {
 				return fmt.Errorf("failed to get episodes from user video collection: %w", err)
 			}
@@ -78,7 +81,7 @@ func (vc VideoCollection) GetEpisodesFromUserVideoCollection() ([]int32, error) 
 	return episodes, nil
 }
 
-func (vc VideoCollection) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (vc VideoCollection) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
 	numOfRowItems := 5
 	numOfRows := int(math.Ceil(float64(len(vc.Episodes) / numOfRowItems)))
 
@@ -103,13 +106,41 @@ func (vc VideoCollection) GenInlineKeyboard(inlineKeyboardType InlineKeyboardTyp
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (vc VideoCollection) Process() (tg.Chattable, error) {
-	episodes, err := vc.GetEpisodesFromUserVideoCollection()
+func VideoCollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	logger := log.Ctx(ctx).With().Logger()
+	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+		ShowAlert:       false,
+	})
+
+	vc := VideoCollection{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+		UserID:    update.CallbackQuery.From.ID,
+	}
+
+	episodes, err := vc.GetEpisodesFromUserVideoCollection(ctx)
 	if err != nil {
-		return nil, err
+		logger.Err(err).Send()
+		return
 	}
 	vc.Episodes = episodes
 
-	chat := tg.NewEditMessageTextAndMarkup(vc.ChatID, vc.MessageID, VideoCollectionTextMsg, vc.GenInlineKeyboard(TypeVideoCollectionDetail))
-	return chat, nil
+	_, err = retry.DoWithData(
+		func() (*models.Message, error) {
+			return b.EditMessageText(ctx, &bot.EditMessageTextParams{
+				ChatID:      vc.ChatID,
+				MessageID:   vc.MessageID,
+				Text:        VideoCollectionTextMsg,
+				ReplyMarkup: vc.GenInlineKeyboard(TypeVideoCollectionItem),
+			})
+		},
+		retry.Attempts(3),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideoCollection)
+		return
+	}
 }

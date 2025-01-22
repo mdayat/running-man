@@ -129,7 +129,7 @@ func LibrariesHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 				ChatID:      rml.ChatID,
 				MessageID:   rml.MessageID,
 				Text:        LibrariesTextMsg,
-				ReplyMarkup: rml.GenInlineKeyboard(TypeVideos),
+				ReplyMarkup: rml.GenInlineKeyboard(TypeVideoList),
 			})
 		},
 		retry.Attempts(3),
