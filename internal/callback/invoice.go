@@ -16,85 +16,17 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mdayat/running-man/configs/services"
+	"github.com/mdayat/running-man/internal/payment"
 	"github.com/mdayat/running-man/repository"
 	"github.com/rs/zerolog/log"
 )
 
 var TypeInvoice = "invoice"
 
-type InvoicePayload struct {
-	ID      string `json:"id"`
-	UserID  int64  `json:"user_id"`
-	Episode int32  `json:"episode"`
-}
-
 type Invoice struct {
-	ChatID    int64
 	MessageID int
 	Year      int32
-	Payload   InvoicePayload
-}
-
-func (i Invoice) GenVideoOwnershipMsg(ctx context.Context) (*bot.SendMessageParams, error) {
-	isUserHasVideo, err := retry.DoWithData(
-		func() (bool, error) {
-			return services.Queries.CheckVideoOwnership(ctx, repository.CheckVideoOwnershipParams{
-				UserID:                 i.Payload.UserID,
-				RunningManVideoEpisode: i.Payload.Episode,
-			})
-		},
-		retry.Attempts(3),
-		retry.LastErrorOnly(true),
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to check video ownership: %w", err)
-	}
-
-	if isUserHasVideo {
-		text := fmt.Sprintf("Ooops... kamu tidak bisa membeli video Running Man episode %d karena kamu telah memilikinya.", i.Payload.Episode)
-		msg := bot.SendMessageParams{
-			ChatID: i.ChatID,
-			Text:   text,
-		}
-
-		return &msg, nil
-	}
-
-	return nil, nil
-}
-
-func (i Invoice) GenInvoiceExpirationMsg(ctx context.Context) (*bot.SendMessageParams, error) {
-	isInvoiceUnexpired, err := retry.DoWithData(
-		func() (bool, error) {
-			return services.Queries.CheckInvoiceExpiration(ctx, repository.CheckInvoiceExpirationParams{
-				UserID:                 i.Payload.UserID,
-				RunningManVideoEpisode: i.Payload.Episode,
-			})
-		},
-		retry.Attempts(3),
-		retry.LastErrorOnly(true),
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to check invoice expiration: %w", err)
-	}
-
-	if isInvoiceUnexpired {
-		text := fmt.Sprintf(
-			"Tidak dapat membuat tagihan untuk pembelian Running Man episode %d karena kamu telah memiliki tagihan yang masih valid.\n\nGunakan tagihan tersebut untuk melakukan pembayaran.",
-			i.Payload.Episode,
-		)
-
-		msg := bot.SendMessageParams{
-			ChatID: i.ChatID,
-			Text:   text,
-		}
-
-		return &msg, nil
-	}
-
-	return nil, nil
+	Payload   payment.InvoicePayload
 }
 
 func (i Invoice) GenInvoiceMsg(ctx context.Context) (*bot.SendInvoiceParams, error) {
@@ -126,7 +58,7 @@ func (i Invoice) GenInvoiceMsg(ctx context.Context) (*bot.SendInvoiceParams, err
 	)
 
 	invoiceMsg := bot.SendInvoiceParams{
-		ChatID:      i.ChatID,
+		ChatID:      i.Payload.ChatID,
 		Title:       title,
 		Description: description,
 		Payload:     string(payloadJSON),
@@ -161,34 +93,48 @@ func InvoiceHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	invoiceUUID := uuid.New()
 	i := Invoice{
-		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
 		MessageID: update.CallbackQuery.Message.Message.ID,
 		Year:      int32(year),
-		Payload: InvoicePayload{
+		Payload: payment.InvoicePayload{
 			ID:      invoiceUUID.String(),
+			ChatID:  update.CallbackQuery.Message.Message.Chat.ID,
 			UserID:  update.CallbackQuery.From.ID,
 			Episode: int32(episode),
 		},
 	}
 
-	videoOwnershipMsg, err := i.GenVideoOwnershipMsg(ctx)
+	isUserHasVideo, err := payment.CheckVideoOwnership(ctx, payment.CheckVideoOwnershipParams{
+		UserID:  i.Payload.UserID,
+		Episode: i.Payload.Episode,
+	})
+
 	if err != nil {
-		logger.Err(err).Send()
+		logger.Err(err).Msg("failed to check video ownership")
 		return
 	}
 
-	invoiceExpirationMsg, err := i.GenInvoiceExpirationMsg(ctx)
+	isInvoiceUnexpired, err := payment.CheckInvoiceExpiration(ctx, payment.CheckInvoiceExpirationParams{
+		UserID:  i.Payload.UserID,
+		Episode: i.Payload.Episode,
+	})
+
 	if err != nil {
-		logger.Err(err).Send()
+		logger.Err(err).Msg("failed to check invoice expiration")
 		return
 	}
 
-	if videoOwnershipMsg != nil || invoiceExpirationMsg != nil {
+	if isUserHasVideo || isInvoiceUnexpired {
 		var msg *bot.SendMessageParams
-		if videoOwnershipMsg != nil {
-			msg = videoOwnershipMsg
+		if isUserHasVideo {
+			msg = &bot.SendMessageParams{
+				ChatID: i.Payload.ChatID,
+				Text:   payment.MakeVideoOwnershipText(i.Payload.Episode),
+			}
 		} else {
-			msg = invoiceExpirationMsg
+			msg = &bot.SendMessageParams{
+				ChatID: i.Payload.ChatID,
+				Text:   payment.MakeUnexpiredInvoiceText(i.Payload.Episode),
+			}
 		}
 
 		_, err = retry.DoWithData(

@@ -30,5 +30,11 @@ WHERE v.episode = $1;
 -- name: CheckInvoiceExpiration :one
 SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW());
 
+-- name: CheckExpiredInvoice :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW());
+
 -- name: CreateInvoice :exec
 INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at) VALUES ($1, $2, $3, $4, $5);
+
+-- name: CreatePayment :exec
+INSERT INTO payment (id, user_id, invoice_id) VALUES ($1, $2, $3);

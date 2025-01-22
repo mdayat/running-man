@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkExpiredInvoice = `-- name: CheckExpiredInvoice :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW())
+`
+
+func (q *Queries) CheckExpiredInvoice(ctx context.Context, id pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, checkExpiredInvoice, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const checkInvoiceExpiration = `-- name: CheckInvoiceExpiration :one
 SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW())
 `
@@ -74,6 +85,21 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) er
 		arg.Amount,
 		arg.ExpiredAt,
 	)
+	return err
+}
+
+const createPayment = `-- name: CreatePayment :exec
+INSERT INTO payment (id, user_id, invoice_id) VALUES ($1, $2, $3)
+`
+
+type CreatePaymentParams struct {
+	ID        string      `json:"id"`
+	UserID    int64       `json:"user_id"`
+	InvoiceID pgtype.UUID `json:"invoice_id"`
+}
+
+func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) error {
+	_, err := q.db.Exec(ctx, createPayment, arg.ID, arg.UserID, arg.InvoiceID)
 	return err
 }
 
