@@ -9,7 +9,6 @@ import (
 
 	"github.com/avast/retry-go/v4"
 	badger "github.com/dgraph-io/badger/v4"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/mdayat/running-man/configs/services"
@@ -79,29 +78,29 @@ func (rml RunningManLibraries) GetRunningManYears(ctx context.Context) ([]int32,
 	return years, nil
 }
 
-func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
+func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType string) models.InlineKeyboardMarkup {
 	numOfRowItems := 3
 	numOfRows := int(math.Ceil(float64(len(rml.Years) / numOfRowItems)))
 
-	inlineKeyboardRows := make([][]tg.InlineKeyboardButton, 0, numOfRows)
-	inlineKeyboardRowItems := make([]tg.InlineKeyboardButton, 0, numOfRowItems)
+	inlineKeyboardRows := make([][]models.InlineKeyboardButton, 0, numOfRows)
+	inlineKeyboardRowItems := make([]models.InlineKeyboardButton, 0, numOfRowItems)
 
 	for _, v := range rml.Years {
 		btnText := fmt.Sprintf("%d", v)
 		btnData := fmt.Sprintf("%s:%d", inlineKeyboardType, v)
-		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
+		inlineKeyboardRowItems = append(inlineKeyboardRowItems, models.InlineKeyboardButton{Text: btnText, CallbackData: btnData})
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
-			inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(inlineKeyboardRowItems...))
-			inlineKeyboardRowItems = inlineKeyboardRowItems[:0]
+			inlineKeyboardRows = append(inlineKeyboardRows, inlineKeyboardRowItems)
+			inlineKeyboardRowItems = make([]models.InlineKeyboardButton, 0, numOfRowItems)
 		}
 	}
 
 	if len(inlineKeyboardRowItems) != 0 {
-		inlineKeyboardRows = append(inlineKeyboardRows, tg.NewInlineKeyboardRow(inlineKeyboardRowItems...))
+		inlineKeyboardRows = append(inlineKeyboardRows, inlineKeyboardRowItems)
 	}
 
-	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
+	return models.InlineKeyboardMarkup{InlineKeyboard: inlineKeyboardRows}
 }
 
 func LibrariesHandler(ctx context.Context, b *bot.Bot, update *models.Update) {

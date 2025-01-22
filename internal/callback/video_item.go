@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/avast/retry-go/v4"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/rs/zerolog/log"
@@ -22,11 +21,15 @@ type VideoItem struct {
 	Episode   int32
 }
 
-func (vi VideoItem) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
-	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(
-		tg.NewInlineKeyboardButtonData("Iya", fmt.Sprintf("%s:%d,%d", inlineKeyboardType, vi.Year, vi.Episode)),
-		tg.NewInlineKeyboardButtonData("Tidak", fmt.Sprintf("%s:%d", TypeVideoList, vi.Year)),
-	))
+func (vi VideoItem) GenInlineKeyboard(inlineKeyboardType string) models.InlineKeyboardMarkup {
+	return models.InlineKeyboardMarkup{
+		InlineKeyboard: [][]models.InlineKeyboardButton{
+			{
+				{Text: "Iya", CallbackData: fmt.Sprintf("%s:%d,%d", inlineKeyboardType, vi.Year, vi.Episode)},
+				{Text: "Tidak", CallbackData: fmt.Sprintf("%s:%d", TypeVideoList, vi.Year)},
+			},
+		},
+	}
 }
 
 func VideoItemHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
