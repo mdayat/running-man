@@ -10,13 +10,16 @@ import (
 	"github.com/avast/retry-go/v4"
 	badger "github.com/dgraph-io/badger/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/mdayat/running-man/configs/services"
 	"github.com/mdayat/running-man/internal/converter"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	TypeLibraries    InlineKeyboardType = "libraries"
-	LibrariesTextMsg                    = "Pilih tahun Running Man:"
+	TypeLibraries    = "libraries"
+	LibrariesTextMsg = "Pilih tahun Running Man:"
 )
 
 type RunningManLibraries struct {
@@ -25,7 +28,7 @@ type RunningManLibraries struct {
 	Years     []int32
 }
 
-func (rml RunningManLibraries) GetRunningManYears() ([]int32, error) {
+func (rml RunningManLibraries) GetRunningManYears(ctx context.Context) ([]int32, error) {
 	var years []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(TypeLibraries))
@@ -35,10 +38,10 @@ func (rml RunningManLibraries) GetRunningManYears() ([]int32, error) {
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManYears(context.TODO())
+				return services.Queries.GetRunningManYears(ctx)
 			}
 
-			years, err = retry.DoWithData(retryFunc, retry.Attempts(3))
+			years, err = retry.DoWithData(retryFunc, retry.Attempts(3), retry.LastErrorOnly(true))
 			if err != nil {
 				return fmt.Errorf("failed to get running man years: %w", err)
 			}
@@ -76,7 +79,7 @@ func (rml RunningManLibraries) GetRunningManYears() ([]int32, error) {
 	return years, nil
 }
 
-func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
 	numOfRowItems := 3
 	numOfRows := int(math.Ceil(float64(len(rml.Years) / numOfRowItems)))
 
@@ -101,13 +104,40 @@ func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType InlineKeyboa
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rml RunningManLibraries) Process() (tg.Chattable, error) {
-	years, err := rml.GetRunningManYears()
+func LibrariesHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	logger := log.Ctx(ctx).With().Logger()
+	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+		ShowAlert:       false,
+	})
+
+	rml := RunningManLibraries{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+	}
+
+	years, err := rml.GetRunningManYears(ctx)
 	if err != nil {
-		return nil, err
+		logger.Err(err).Send()
+		return
 	}
 	rml.Years = years
 
-	chat := tg.NewEditMessageTextAndMarkup(rml.ChatID, rml.MessageID, LibrariesTextMsg, rml.GenInlineKeyboard(TypeVideos))
-	return chat, nil
+	_, err = retry.DoWithData(
+		func() (*models.Message, error) {
+			return b.EditMessageText(ctx, &bot.EditMessageTextParams{
+				ChatID:      rml.ChatID,
+				MessageID:   rml.MessageID,
+				Text:        LibrariesTextMsg,
+				ReplyMarkup: rml.GenInlineKeyboard(TypeVideos),
+			})
+		},
+		retry.Attempts(3),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		logger.Err(err).Msgf("failed to send %s callback edit message", TypeLibraries)
+		return
+	}
 }

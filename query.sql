@@ -1,7 +1,7 @@
 -- name: CheckUserExistence :one
 SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);
 
--- name: CheckUserVideo :one
+-- name: CheckVideoOwnership :one
 SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2);
 
 -- name: GetEpisodesFromUserVideoCollection :many

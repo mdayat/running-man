@@ -5,18 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
 	badger "github.com/dgraph-io/badger/v4"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"github.com/mdayat/running-man/configs/services"
 	"github.com/mdayat/running-man/internal/converter"
+	"github.com/rs/zerolog/log"
 )
 
 var (
-	TypeVideos    InlineKeyboardType = "videos"
-	VideosTextMsg                    = "Pilih episode Running Man:"
+	TypeVideos    = "videos"
+	VideosTextMsg = "Pilih episode Running Man:"
 )
 
 type RunningManVideos struct {
@@ -26,7 +31,7 @@ type RunningManVideos struct {
 	Episodes  []int32
 }
 
-func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
+func (rmv RunningManVideos) GetRunningManEpisodes(ctx context.Context) ([]int32, error) {
 	var episodes []int32
 	err := services.Badger.Update(func(txn *badger.Txn) error {
 		runningManVideosKey := fmt.Sprintf("%d:%s", rmv.Year, TypeVideos)
@@ -37,10 +42,10 @@ func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManEpisodesByYear(context.TODO(), rmv.Year)
+				return services.Queries.GetRunningManEpisodesByYear(ctx, rmv.Year)
 			}
 
-			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3))
+			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3), retry.LastErrorOnly(true))
 			if err != nil {
 				return fmt.Errorf("failed to get running man episodes: %w", err)
 			}
@@ -78,7 +83,7 @@ func (rmv RunningManVideos) GetRunningManEpisodes() ([]int32, error) {
 	return episodes, nil
 }
 
-func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType InlineKeyboardType) tg.InlineKeyboardMarkup {
+func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType string) tg.InlineKeyboardMarkup {
 	numOfRowItems := 5
 	numOfRows := int(math.Ceil(float64(len(rmv.Episodes) / numOfRowItems)))
 
@@ -87,7 +92,7 @@ func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType InlineKeyboardT
 
 	for _, v := range rmv.Episodes {
 		btnText := fmt.Sprintf("%d", v)
-		btnData := fmt.Sprintf("%s:%d:%d", inlineKeyboardType, rmv.Year, v)
+		btnData := fmt.Sprintf("%s:%d,%d", inlineKeyboardType, rmv.Year, v)
 		inlineKeyboardRowItems = append(inlineKeyboardRowItems, tg.NewInlineKeyboardButtonData(btnText, btnData))
 
 		if len(inlineKeyboardRowItems) == numOfRowItems {
@@ -107,13 +112,47 @@ func (rmv RunningManVideos) GenInlineKeyboard(inlineKeyboardType InlineKeyboardT
 	return tg.NewInlineKeyboardMarkup(inlineKeyboardRows...)
 }
 
-func (rmv RunningManVideos) Process() (tg.Chattable, error) {
-	episodes, err := rmv.GetRunningManEpisodes()
+func VideosHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	logger := log.Ctx(ctx).With().Logger()
+	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+		ShowAlert:       false,
+	})
+
+	year, err := strconv.Atoi(strings.Split(update.CallbackQuery.Data, ":")[1])
 	if err != nil {
-		return nil, err
+		logger.Err(err).Msg("failed to convert year string to int")
+		return
+	}
+
+	rmv := RunningManVideos{
+		ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID: update.CallbackQuery.Message.Message.ID,
+		Year:      int32(year),
+	}
+
+	episodes, err := rmv.GetRunningManEpisodes(ctx)
+	if err != nil {
+		logger.Err(err).Send()
+		return
 	}
 	rmv.Episodes = episodes
 
-	chat := tg.NewEditMessageTextAndMarkup(rmv.ChatID, rmv.MessageID, VideosTextMsg, rmv.GenInlineKeyboard(TypeVideo))
-	return chat, nil
+	_, err = retry.DoWithData(
+		func() (*models.Message, error) {
+			return b.EditMessageText(ctx, &bot.EditMessageTextParams{
+				ChatID:      rmv.ChatID,
+				MessageID:   rmv.MessageID,
+				Text:        VideosTextMsg,
+				ReplyMarkup: rmv.GenInlineKeyboard(TypeVideo),
+			})
+		},
+		retry.Attempts(3),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		logger.Err(err).Msgf("failed to send %s callback edit message", TypeVideos)
+		return
+	}
 }
