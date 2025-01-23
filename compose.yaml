@@ -1,0 +1,23 @@
+services:
+  bot:
+    build: .
+    # image: mdayat/running-man-bot:${RUNNING_MAN_BOT_TAG}
+    logging:
+      driver: fluentd
+      options:
+        tag: bot-service
+        fluentd-sub-second-precision: "true"
+
+  fluentbit:
+    image: fluent/fluent-bit:3.1.9
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    environment:
+      - LOKI_HOST=${LOKI_HOST}
+      - LOKI_USER=${LOKI_USER}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
+    volumes:
+      - type: bind
+        source: ./fluent-bit.conf
+        target: /fluent-bit/etc/fluent-bit.conf
