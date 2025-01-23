@@ -84,7 +84,7 @@ func (vl VideoList) GetRunningManEpisodes(ctx context.Context) ([]int32, error) 
 
 func (vl VideoList) GenInlineKeyboard(inlineKeyboardType string) models.InlineKeyboardMarkup {
 	numOfRowItems := 5
-	numOfRows := int(math.Ceil(float64(len(vl.Episodes) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(vl.Episodes)) / float64(numOfRowItems)))
 
 	inlineKeyboardRows := make([][]models.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]models.InlineKeyboardButton, 0, numOfRowItems)

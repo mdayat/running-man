@@ -82,7 +82,7 @@ func (vc VideoCollection) GetEpisodesFromUserVideoCollection(ctx context.Context
 
 func (vc VideoCollection) GenInlineKeyboard(inlineKeyboardType string) models.InlineKeyboardMarkup {
 	numOfRowItems := 5
-	numOfRows := int(math.Ceil(float64(len(vc.Episodes) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(vc.Episodes)) / float64(numOfRowItems)))
 
 	inlineKeyboardRows := make([][]models.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]models.InlineKeyboardButton, 0, numOfRowItems)

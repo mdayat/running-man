@@ -80,7 +80,7 @@ func (rml RunningManLibraries) GetRunningManYears(ctx context.Context) ([]int32,
 
 func (rml RunningManLibraries) GenInlineKeyboard(inlineKeyboardType string) models.InlineKeyboardMarkup {
 	numOfRowItems := 3
-	numOfRows := int(math.Ceil(float64(len(rml.Years) / numOfRowItems)))
+	numOfRows := int(math.Ceil(float64(len(rml.Years)) / float64(numOfRowItems)))
 
 	inlineKeyboardRows := make([][]models.InlineKeyboardButton, 0, numOfRows)
 	inlineKeyboardRowItems := make([]models.InlineKeyboardButton, 0, numOfRowItems)
