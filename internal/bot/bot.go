@@ -23,10 +23,10 @@ func New(botToken string) (*bot.Bot, error) {
 		return nil, err
 	}
 
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, command.DefaultHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, command.DefaultHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, command.StartHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/browse", bot.MatchTypeExact, command.BrowseHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/collection", bot.MatchTypeExact, command.CollectionHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/support", bot.MatchTypeExact, command.SupportHandler)
 
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, callback.TypeLibraries, bot.MatchTypePrefix, callback.LibrariesHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, callback.TypeVideoList, bot.MatchTypePrefix, callback.VideoListHandler)

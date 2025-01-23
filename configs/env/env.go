@@ -14,6 +14,7 @@ var (
 	TOKEN_AUTH_KEY_2020   string
 	TOKEN_AUTH_KEY_2021   string
 	DIRECT_EMBED_BASE_URL string
+	SUPPORT_NUMBER        string
 )
 
 func Load() error {
@@ -29,6 +30,7 @@ func Load() error {
 	TOKEN_AUTH_KEY_2020 = os.Getenv("TOKEN_AUTH_KEY_2020")
 	TOKEN_AUTH_KEY_2021 = os.Getenv("TOKEN_AUTH_KEY_2021")
 	DIRECT_EMBED_BASE_URL = os.Getenv("DIRECT_EMBED_BASE_URL")
+	SUPPORT_NUMBER = os.Getenv("SUPPORT_NUMBER")
 
 	return nil
 }

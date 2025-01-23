@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func StartHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	logger := log.Ctx(ctx).With().Logger()
 	isUserExist, err := retry.DoWithData(
 		func() (bool, error) {
@@ -47,11 +47,10 @@ func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	text := `
 	Selamat datang di @RunningManSeriesBot! Dengan bot ini, kamu dapat mengelola dan membeli episode lama dari "Running Man." Berikut adalah perintah yang dapat kamu gunakan:
 
-	/start - Selamat datang dan pengenalan
-	/help - Dapatkan bantuan dan daftar perintah yang tersedia
+	/start - Pengenalan dan daftar perintah yang tersedia
 	/browse - Jelajahi episode Running Man
 	/collection - Lihat koleksi video Running Man yang kamu miliki
-	/feedback - Kirimkan umpan balik atau laporkan masalah
+	/support - Butuh bantuan? Dapatkan dukungan teknis, tips, dan jawaban atas pertanyaan seputar penggunaan aplikasi kami
 	`
 
 	_, err = retry.DoWithData(
@@ -66,7 +65,7 @@ func DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	)
 
 	if err != nil {
-		logger.Err(err).Msg("failed to send default command message")
+		logger.Err(err).Msg("failed to send start command message")
 		return
 	}
 }
