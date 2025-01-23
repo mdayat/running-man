@@ -27,11 +27,19 @@ func CollectionHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
-			return b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID:      vc.ChatID,
-				Text:        callback.VideoCollectionTextMsg,
-				ReplyMarkup: vc.GenInlineKeyboard(callback.TypeVideoCollectionItem),
-			})
+			msg := &bot.SendMessageParams{
+				ChatID: vc.ChatID,
+				Text:   "",
+			}
+
+			if len(episodes) == 0 {
+				msg.Text = "Ooops... kamu belum memiliki video Running Man! Yuk jelajahi dan lakukan pembelian video Running Man melalui perintah /browse."
+			} else {
+				msg.Text = callback.VideoCollectionTextMsg
+				msg.ReplyMarkup = vc.GenInlineKeyboard(callback.TypeVideoCollectionItem)
+			}
+
+			return b.SendMessage(ctx, msg)
 		},
 		retry.Attempts(3),
 		retry.LastErrorOnly(true),

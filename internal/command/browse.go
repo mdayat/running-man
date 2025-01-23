@@ -26,11 +26,19 @@ func BrowseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	_, err = retry.DoWithData(
 		func() (*models.Message, error) {
-			return b.SendMessage(ctx, &bot.SendMessageParams{
-				ChatID:      rml.ChatID,
-				Text:        callback.LibrariesTextMsg,
-				ReplyMarkup: rml.GenInlineKeyboard(callback.TypeVideoList),
-			})
+			msg := &bot.SendMessageParams{
+				ChatID: rml.ChatID,
+				Text:   "",
+			}
+
+			if len(years) == 0 {
+				msg.Text = "Ooops... kami tidak memiliki daftar video Running Man untuk ditampilkan."
+			} else {
+				msg.Text = callback.LibrariesTextMsg
+				msg.ReplyMarkup = rml.GenInlineKeyboard(callback.TypeVideoList)
+			}
+
+			return b.SendMessage(ctx, msg)
 		},
 		retry.Attempts(3),
 		retry.LastErrorOnly(true),
