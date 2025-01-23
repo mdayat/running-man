@@ -40,7 +40,7 @@ func (vl VideoLink) GenVideoLinkMsg(ctx context.Context) (*bot.SendMessageParams
 		return nil, fmt.Errorf("failed to get running man video and library by episode: %w", err)
 	}
 
-	TOKEN_AUTH_KEY := os.Getenv(fmt.Sprintf("TOKEN_AUTH_KEY_%d", result.Year))
+	tokenAuthKey := os.Getenv(fmt.Sprintf("TOKEN_AUTH_KEY_%d", result.Year))
 	duration := time.Now().Add(time.Minute * 3)
 	durationUnix := duration.Unix()
 
@@ -49,12 +49,12 @@ func (vl VideoLink) GenVideoLinkMsg(ctx context.Context) (*bot.SendMessageParams
 		return nil, fmt.Errorf("failed to get video UUID from pgtype.UUID: %w", err)
 	}
 
-	concatenatedString := TOKEN_AUTH_KEY + fmt.Sprintf("%s", videoID) + fmt.Sprintf("%d", durationUnix)
+	concatenatedString := tokenAuthKey + fmt.Sprintf("%s", videoID) + fmt.Sprintf("%d", durationUnix)
 	hash := sha256.New()
 	hash.Write([]byte(concatenatedString))
 	videoLinkToken := hex.EncodeToString(hash.Sum(nil))
 
-	url := fmt.Sprintf("%s/%d/%s?token=%s&expires=%d", env.DIRECT_EMBED_BASE_URL, result.RunningManLibraryID, videoID, videoLinkToken, durationUnix)
+	url := fmt.Sprintf("%s/%d/%s?token=%s&expires=%d", env.DirectEmbedBaseURL, result.RunningManLibraryID, videoID, videoLinkToken, durationUnix)
 	text := fmt.Sprintf(
 		"Tautan untuk video Running Man episode %d telah dibuat, klik tombol \"Tonton\" untuk menontonnya.\n\nTautan hanya berlaku selama tiga menit. Setelah itu, tautan menjadi invalid dan tidak dapat diakses.\n\nMeskipun tautan invalid, kamu tetap bisa menonton selama kamu tidak meninggalkan atau me-refresh browser.",
 		vl.Episode,

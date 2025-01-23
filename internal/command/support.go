@@ -22,7 +22,7 @@ func SupportHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 				ReplyMarkup: models.InlineKeyboardMarkup{
 					InlineKeyboard: [][]models.InlineKeyboardButton{
 						{
-							{Text: "Narahubung", URL: fmt.Sprintf("https://wa.me/%s", env.SUPPORT_NUMBER)},
+							{Text: "Narahubung", URL: fmt.Sprintf("https://wa.me/%s", env.SupportNumber)},
 						},
 					},
 				},

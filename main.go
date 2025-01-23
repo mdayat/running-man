@@ -17,7 +17,7 @@ import (
 
 func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+	zerolog.CallerMarshalFunc = func(_ uintptr, file string, line int) string {
 		return filepath.Base(file) + ":" + strconv.Itoa(line)
 	}
 
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	ctx := context.TODO()
-	db, err := services.NewDB(ctx, env.DATABASE_URL)
+	db, err := services.NewDB(ctx, env.DatabaseURL)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create database instance")
 	}
@@ -42,7 +42,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	bot, err := bot.New(env.BOT_TOKEN)
+	bot, err := bot.New(env.BotToken)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to create bot instance")
 	}
