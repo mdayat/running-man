@@ -1,7 +1,6 @@
 services:
   bot:
-    build: .
-    # image: mdayat/running-man-bot:${RUNNING_MAN_BOT_TAG}
+    image: mdayat/running-man-bot:${RUNNING_MAN_BOT_TAG}
     logging:
       driver: fluentd
       options:
