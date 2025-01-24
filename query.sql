@@ -38,3 +38,6 @@ INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at)
 
 -- name: CreatePayment :exec
 INSERT INTO payment (id, user_id, invoice_id) VALUES ($1, $2, $3);
+
+-- name: CreateVideoCollection :exec
+INSERT INTO collection (user_id, running_man_video_episode) VALUES ($1, $2);

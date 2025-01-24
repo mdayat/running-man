@@ -134,6 +134,15 @@ func InsertAndSendSuccessfulPayment(ctx context.Context, b *bot.Bot, arg InsertA
 			return fmt.Errorf("failed to insert successful payment: %w", err)
 		}
 
+		err = qtx.CreateVideoCollection(ctx, repository.CreateVideoCollectionParams{
+			UserID:                 arg.Payload.UserID,
+			RunningManVideoEpisode: arg.Payload.Episode,
+		})
+
+		if err != nil {
+			return fmt.Errorf("failed to insert video collection: %w", err)
+		}
+
 		text := fmt.Sprintf("Pembayaran untuk video Running Man episode %d telah berhasil. Tonton video baru kamu melalui perintah /collection.", arg.Payload.Episode)
 		_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: arg.Payload.ChatID,

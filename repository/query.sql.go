@@ -117,6 +117,20 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
+const createVideoCollection = `-- name: CreateVideoCollection :exec
+INSERT INTO collection (user_id, running_man_video_episode) VALUES ($1, $2)
+`
+
+type CreateVideoCollectionParams struct {
+	UserID                 int64 `json:"user_id"`
+	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
+}
+
+func (q *Queries) CreateVideoCollection(ctx context.Context, arg CreateVideoCollectionParams) error {
+	_, err := q.db.Exec(ctx, createVideoCollection, arg.UserID, arg.RunningManVideoEpisode)
+	return err
+}
+
 const getEpisodesFromUserVideoCollection = `-- name: GetEpisodesFromUserVideoCollection :many
 SELECT running_man_video_episode FROM collection WHERE user_id = $1
 `
