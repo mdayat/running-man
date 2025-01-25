@@ -54,7 +54,7 @@ func (vl VideoList) GetRunningManEpisodes(ctx context.Context) ([]int32, error) 
 				return fmt.Errorf("failed to convert int32 of episodes to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(videoListKey), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(videoListKey), entryVal).WithTTL(time.Hour * 24)
 			if err := txn.SetEntry(entry); err != nil {
 				return fmt.Errorf("failed to set %s key: %w", videoListKey, err)
 			}

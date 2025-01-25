@@ -52,7 +52,7 @@ func (vc VideoCollection) GetEpisodesFromUserVideoCollection(ctx context.Context
 				return fmt.Errorf("failed to convert int32 of episodes to bytes: %w", err)
 			}
 
-			entry := badger.NewEntry([]byte(videoCollectionKey), entryVal).WithTTL(time.Hour)
+			entry := badger.NewEntry([]byte(videoCollectionKey), entryVal).WithTTL(time.Hour * 24)
 			if err := txn.SetEntry(entry); err != nil {
 				return fmt.Errorf("failed to set %s key: %w", videoCollectionKey, err)
 			}
