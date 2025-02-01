@@ -12,6 +12,7 @@ services:
       - type: bind
         source: ./fluent-bit.conf
         target: /fluent-bit/etc/fluent-bit.conf
+    restart: unless-stopped
 
   bot:
     image: mdayat/running-man-bot:${RUNNING_MAN_BOT_TAG}
@@ -22,3 +23,4 @@ services:
       options:
         tag: bot-service
         fluentd-sub-second-precision: "true"
+    restart: on-failure
