@@ -1,44 +1,31 @@
 CREATE TABLE "user" (
   id BIGINT PRIMARY KEY,
   first_name VARCHAR(255) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+  subscription_expired_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE TABLE running_man_library (
+CREATE TABLE library (
   id BIGINT PRIMARY KEY,
   year INT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-CREATE TABLE running_man_video (
-  id UUID PRIMARY KEY,
-  running_man_library_year INT NOT NULL,
-  episode INT UNIQUE NOT NULL,
-  price INT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-
-  CONSTRAINT fk_video_library
-    FOREIGN KEY (running_man_library_year)
-    REFERENCES running_man_library (year)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE TABLE collection (
-  user_id BIGINT NOT NULL,
-  running_man_video_episode INT NOT NULL,
+CREATE TABLE video (
+  id UUID PRIMARY KEY,
+  library_year INT NOT NULL,
+  episode INT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMPTZ NULL,
 
-  PRIMARY KEY (user_id, running_man_video_episode),
-
-  CONSTRAINT fk_user_collection
-    FOREIGN KEY (user_id)
-    REFERENCES "user" (id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE,
-
-  CONSTRAINT fk_video_collection
-    FOREIGN KEY (running_man_video_episode)
-    REFERENCES running_man_video (episode)
+  CONSTRAINT fk_video_library_year
+    FOREIGN KEY (library_year)
+    REFERENCES library(year)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
@@ -46,20 +33,16 @@ CREATE TABLE collection (
 CREATE TABLE invoice (
   id UUID PRIMARY KEY,
   user_id BIGINT NOT NULL,
-  running_man_video_episode INT NOT NULL,
-  amount INT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  ref_id VARCHAR(255) NOT NULL,
+  total_amount INT NOT NULL CHECK (total_amount >= 0),
   expired_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMPTZ NULL,
 
-  CONSTRAINT fk_user_invoice
+  CONSTRAINT fk_invoice_user_id
     FOREIGN KEY (user_id)
-    REFERENCES "user" (id)
-    ON UPDATE CASCADE
-    ON DELETE CASCADE,
-
-  CONSTRAINT fk_video_invoice
-    FOREIGN KEY (running_man_video_episode)
-    REFERENCES running_man_video (episode)
+    REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
@@ -68,17 +51,21 @@ CREATE TABLE payment (
   id VARCHAR(255) PRIMARY KEY,
   user_id BIGINT NOT NULL,
   invoice_id UUID UNIQUE NOT NULL,
+  amount_paid INT NOT NULL CHECK (amount_paid >= 0),
+  status VARCHAR(50) NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMPTZ NULL,
 
-  CONSTRAINT fk_user_payment
+  CONSTRAINT fk_payment_user_id
     FOREIGN KEY (user_id)
-    REFERENCES "user" (id)
+    REFERENCES "user"(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE,
 
-  CONSTRAINT fk_invoice_payment
+  CONSTRAINT fk_payment_invoice_id
     FOREIGN KEY (invoice_id)
-    REFERENCES invoice (id)
+    REFERENCES invoice(id)
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );

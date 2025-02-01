@@ -1,4 +1,5 @@
-h1:ylbb9l0pnhsG5Q/KEPMPPF0rbBEzPCwoYCgxFdysEig=
+h1:z6FCxxawSjDloFBVNVmHRA467mWOBIVrIMfquau6AVI=
 20250119071505_initial_schema.sql h1:dWpjs+wjNDTUMTtXqobVXvW1jfh1tDxchbfdw78DjxY=
 20250121073944_add_payment_and_update_transaction_tables.sql h1:mk/sXttopUPffwTA/J1m1JUckfMWrX//8CxNwCKkrZw=
 20250121083742_update_invoice_table.sql h1:KZ8f25pswwgEA51kpRFZSzN+PTXEaoteYnPvzuPsPto=
+20250201133105_change_pricing_model.sql h1:pq/j0r5P9wlZvcb8k0jBp4fACWlybOQaCRH4bAbtpYc=
