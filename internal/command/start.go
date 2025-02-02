@@ -45,11 +45,10 @@ func StartHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	text := `
-	Selamat datang di @RunningManSeriesBot! Dengan bot ini, kamu dapat mengelola dan membeli episode lama dari "Running Man." Berikut adalah perintah yang dapat kamu gunakan:
+	Selamat datang di @RunningManSeriesBot! Dengan bot ini, kamu dapat berlangganan untuk menonton episode lama Running Man sepuasnya. Berikut adalah perintah yang dapat kamu gunakan:
 
 	/start - Pengenalan dan daftar perintah yang tersedia
-	/browse - Jelajahi episode Running Man
-	/collection - Lihat koleksi video Running Man yang kamu miliki
+	/browse - Jelajahi dan tonton episode Running Man
 	/support - Butuh bantuan? Dapatkan dukungan teknis, tips, dan jawaban atas pertanyaan seputar penggunaan aplikasi kami
 	`
 
