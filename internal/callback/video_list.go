@@ -41,7 +41,7 @@ func (vl VideoList) GetRunningManEpisodes(ctx context.Context) ([]int32, error) 
 
 		if err != nil && errors.Is(err, badger.ErrKeyNotFound) {
 			retryFunc := func() ([]int32, error) {
-				return services.Queries.GetRunningManEpisodesByYear(ctx, vl.Year)
+				return services.Queries.GetEpisodesByYear(ctx, vl.Year)
 			}
 
 			episodes, err = retry.DoWithData(retryFunc, retry.Attempts(3), retry.LastErrorOnly(true))
@@ -76,7 +76,7 @@ func (vl VideoList) GetRunningManEpisodes(ctx context.Context) ([]int32, error) 
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute badger update function: %w", err)
 	}
 
 	return episodes, nil

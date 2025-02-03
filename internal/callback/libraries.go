@@ -72,7 +72,7 @@ func (rml RunningManLibraries) GetRunningManYears(ctx context.Context) ([]int32,
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to execute badger update function: %w", err)
 	}
 
 	return years, nil
