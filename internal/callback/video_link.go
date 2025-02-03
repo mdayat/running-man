@@ -29,8 +29,8 @@ type VideoLink struct {
 
 func (vl VideoLink) GenVideoLinkMsg(ctx context.Context) (*bot.SendMessageParams, error) {
 	result, err := retry.DoWithData(
-		func() (repository.GetRunningManVideoAndLibraryByEpisodeRow, error) {
-			return services.Queries.GetRunningManVideoAndLibraryByEpisode(ctx, vl.Episode)
+		func() (repository.GetVideoAndLibraryByEpisodeRow, error) {
+			return services.Queries.GetVideoAndLibraryByEpisode(ctx, vl.Episode)
 		},
 		retry.Attempts(3),
 		retry.LastErrorOnly(true),
@@ -44,7 +44,7 @@ func (vl VideoLink) GenVideoLinkMsg(ctx context.Context) (*bot.SendMessageParams
 	duration := time.Now().Add(time.Minute * 3)
 	durationUnix := duration.Unix()
 
-	videoID, err := result.RunningManVideoID.Value()
+	videoID, err := result.VideoID.Value()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get video UUID from pgtype.UUID: %w", err)
 	}
@@ -54,7 +54,7 @@ func (vl VideoLink) GenVideoLinkMsg(ctx context.Context) (*bot.SendMessageParams
 	hash.Write([]byte(concatenatedString))
 	videoLinkToken := hex.EncodeToString(hash.Sum(nil))
 
-	url := fmt.Sprintf("%s/%d/%s?token=%s&expires=%d", env.DirectEmbedBaseURL, result.RunningManLibraryID, videoID, videoLinkToken, durationUnix)
+	url := fmt.Sprintf("%s/%d/%s?token=%s&expires=%d", env.DirectEmbedBaseURL, result.LibraryID, videoID, videoLinkToken, durationUnix)
 	text := fmt.Sprintf(
 		"Tautan untuk video Running Man episode %d telah dibuat, klik tombol \"Tonton\" untuk menontonnya.\n\nTautan hanya berlaku selama tiga menit. Setelah itu, tautan menjadi invalid dan tidak dapat diakses.\n\nMeskipun tautan invalid, kamu tetap bisa menonton selama kamu tidak meninggalkan atau me-refresh browser.",
 		vl.Episode,
