@@ -14,6 +14,7 @@ var (
 	TripayMerchantCode string
 	TripayAPIKey       string
 	TripayPrivateKey   string
+	TripayURL          string
 )
 
 func Load() error {
@@ -29,6 +30,7 @@ func Load() error {
 	TripayMerchantCode = os.Getenv("TRIPAY_MERCHANT_CODE")
 	TripayAPIKey = os.Getenv("TRIPAY_API_KEY")
 	TripayPrivateKey = os.Getenv("TRIPAY_PRIVATE_KEY")
+	TripayURL = os.Getenv("TRIPAY_URL")
 
 	return nil
 }
