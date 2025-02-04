@@ -11,33 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const checkExpiredInvoice = `-- name: CheckExpiredInvoice :one
-SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW())
-`
-
-func (q *Queries) CheckExpiredInvoice(ctx context.Context, id pgtype.UUID) (bool, error) {
-	row := q.db.QueryRow(ctx, checkExpiredInvoice, id)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
-const checkInvoiceExpiration = `-- name: CheckInvoiceExpiration :one
-SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW())
-`
-
-type CheckInvoiceExpirationParams struct {
-	UserID                 int64 `json:"user_id"`
-	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
-}
-
-func (q *Queries) CheckInvoiceExpiration(ctx context.Context, arg CheckInvoiceExpirationParams) (bool, error) {
-	row := q.db.QueryRow(ctx, checkInvoiceExpiration, arg.UserID, arg.RunningManVideoEpisode)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const checkUserExistence = `-- name: CheckUserExistence :one
 SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1)
 `
@@ -49,40 +22,26 @@ func (q *Queries) CheckUserExistence(ctx context.Context, id int64) (bool, error
 	return exists, err
 }
 
-const checkVideoOwnership = `-- name: CheckVideoOwnership :one
-SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2)
-`
-
-type CheckVideoOwnershipParams struct {
-	UserID                 int64 `json:"user_id"`
-	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
-}
-
-func (q *Queries) CheckVideoOwnership(ctx context.Context, arg CheckVideoOwnershipParams) (bool, error) {
-	row := q.db.QueryRow(ctx, checkVideoOwnership, arg.UserID, arg.RunningManVideoEpisode)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
-}
-
 const createInvoice = `-- name: CreateInvoice :exec
-INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at) VALUES ($1, $2, $3, $4, $5)
+INSERT INTO invoice (id, user_id, ref_id, total_amount, qr_url, expired_at) VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateInvoiceParams struct {
-	ID                     pgtype.UUID        `json:"id"`
-	UserID                 int64              `json:"user_id"`
-	RunningManVideoEpisode int32              `json:"running_man_video_episode"`
-	Amount                 int32              `json:"amount"`
-	ExpiredAt              pgtype.Timestamptz `json:"expired_at"`
+	ID          pgtype.UUID        `json:"id"`
+	UserID      int64              `json:"user_id"`
+	RefID       string             `json:"ref_id"`
+	TotalAmount int32              `json:"total_amount"`
+	QrUrl       string             `json:"qr_url"`
+	ExpiredAt   pgtype.Timestamptz `json:"expired_at"`
 }
 
 func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) error {
 	_, err := q.db.Exec(ctx, createInvoice,
 		arg.ID,
 		arg.UserID,
-		arg.RunningManVideoEpisode,
-		arg.Amount,
+		arg.RefID,
+		arg.TotalAmount,
+		arg.QrUrl,
 		arg.ExpiredAt,
 	)
 	return err
@@ -117,50 +76,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
-const createVideoCollection = `-- name: CreateVideoCollection :exec
-INSERT INTO collection (user_id, running_man_video_episode) VALUES ($1, $2)
+const getEpisodesByYear = `-- name: GetEpisodesByYear :many
+SELECT episode FROM video WHERE library_year = $1 ORDER BY episode ASC
 `
 
-type CreateVideoCollectionParams struct {
-	UserID                 int64 `json:"user_id"`
-	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
-}
-
-func (q *Queries) CreateVideoCollection(ctx context.Context, arg CreateVideoCollectionParams) error {
-	_, err := q.db.Exec(ctx, createVideoCollection, arg.UserID, arg.RunningManVideoEpisode)
-	return err
-}
-
-const getEpisodesFromUserVideoCollection = `-- name: GetEpisodesFromUserVideoCollection :many
-SELECT running_man_video_episode FROM collection WHERE user_id = $1
-`
-
-func (q *Queries) GetEpisodesFromUserVideoCollection(ctx context.Context, userID int64) ([]int32, error) {
-	rows, err := q.db.Query(ctx, getEpisodesFromUserVideoCollection, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []int32
-	for rows.Next() {
-		var running_man_video_episode int32
-		if err := rows.Scan(&running_man_video_episode); err != nil {
-			return nil, err
-		}
-		items = append(items, running_man_video_episode)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getRunningManEpisodesByYear = `-- name: GetRunningManEpisodesByYear :many
-SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC
-`
-
-func (q *Queries) GetRunningManEpisodesByYear(ctx context.Context, runningManLibraryYear int32) ([]int32, error) {
-	rows, err := q.db.Query(ctx, getRunningManEpisodesByYear, runningManLibraryYear)
+func (q *Queries) GetEpisodesByYear(ctx context.Context, libraryYear int32) ([]int32, error) {
+	rows, err := q.db.Query(ctx, getEpisodesByYear, libraryYear)
 	if err != nil {
 		return nil, err
 	}
@@ -179,41 +100,8 @@ func (q *Queries) GetRunningManEpisodesByYear(ctx context.Context, runningManLib
 	return items, nil
 }
 
-const getRunningManVideoAndLibraryByEpisode = `-- name: GetRunningManVideoAndLibraryByEpisode :one
-SELECT
-  v.id AS running_man_video_id,
-  l.id AS running_man_library_id,
-  l.year
-FROM running_man_video v JOIN running_man_library l ON v.running_man_library_year = l.year
-WHERE v.episode = $1
-`
-
-type GetRunningManVideoAndLibraryByEpisodeRow struct {
-	RunningManVideoID   pgtype.UUID `json:"running_man_video_id"`
-	RunningManLibraryID int64       `json:"running_man_library_id"`
-	Year                int32       `json:"year"`
-}
-
-func (q *Queries) GetRunningManVideoAndLibraryByEpisode(ctx context.Context, episode int32) (GetRunningManVideoAndLibraryByEpisodeRow, error) {
-	row := q.db.QueryRow(ctx, getRunningManVideoAndLibraryByEpisode, episode)
-	var i GetRunningManVideoAndLibraryByEpisodeRow
-	err := row.Scan(&i.RunningManVideoID, &i.RunningManLibraryID, &i.Year)
-	return i, err
-}
-
-const getRunningManVideoPrice = `-- name: GetRunningManVideoPrice :one
-SELECT price FROM running_man_video WHERE episode = $1
-`
-
-func (q *Queries) GetRunningManVideoPrice(ctx context.Context, episode int32) (int32, error) {
-	row := q.db.QueryRow(ctx, getRunningManVideoPrice, episode)
-	var price int32
-	err := row.Scan(&price)
-	return price, err
-}
-
 const getRunningManYears = `-- name: GetRunningManYears :many
-SELECT year FROM running_man_library ORDER BY year ASC
+SELECT year FROM library ORDER BY year ASC
 `
 
 func (q *Queries) GetRunningManYears(ctx context.Context) ([]int32, error) {
@@ -234,4 +122,59 @@ func (q *Queries) GetRunningManYears(ctx context.Context) ([]int32, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getVideoAndLibraryByEpisode = `-- name: GetVideoAndLibraryByEpisode :one
+SELECT
+  v.id AS video_id,
+  l.id AS library_id,
+  l.year
+FROM video v JOIN library l ON v.library_year = l.year
+WHERE v.episode = $1
+`
+
+type GetVideoAndLibraryByEpisodeRow struct {
+	VideoID   pgtype.UUID `json:"video_id"`
+	LibraryID int64       `json:"library_id"`
+	Year      int32       `json:"year"`
+}
+
+func (q *Queries) GetVideoAndLibraryByEpisode(ctx context.Context, episode int32) (GetVideoAndLibraryByEpisodeRow, error) {
+	row := q.db.QueryRow(ctx, getVideoAndLibraryByEpisode, episode)
+	var i GetVideoAndLibraryByEpisodeRow
+	err := row.Scan(&i.VideoID, &i.LibraryID, &i.Year)
+	return i, err
+}
+
+const hasValidInvoice = `-- name: HasValidInvoice :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND expired_at > NOW())
+`
+
+func (q *Queries) HasValidInvoice(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, hasValidInvoice, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const isInvoiceExpired = `-- name: IsInvoiceExpired :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW())
+`
+
+func (q *Queries) IsInvoiceExpired(ctx context.Context, id pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, isInvoiceExpired, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const isUserSubscribed = `-- name: IsUserSubscribed :one
+SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1 AND subscription_expired_at > NOW())
+`
+
+func (q *Queries) IsUserSubscribed(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, isUserSubscribed, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

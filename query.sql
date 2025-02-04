@@ -1,43 +1,34 @@
 -- name: CheckUserExistence :one
 SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1);
 
--- name: CheckVideoOwnership :one
-SELECT EXISTS(SELECT 1 FROM collection WHERE user_id = $1 AND running_man_video_episode = $2);
-
--- name: GetEpisodesFromUserVideoCollection :many
-SELECT running_man_video_episode FROM collection WHERE user_id = $1;
-
 -- name: CreateUser :exec
 INSERT INTO "user" (id, first_name) VALUES ($1, $2);
 
+-- name: IsUserSubscribed :one
+SELECT EXISTS(SELECT 1 FROM "user" WHERE id = $1 AND subscription_expired_at > NOW());
+
 -- name: GetRunningManYears :many
-SELECT year FROM running_man_library ORDER BY year ASC;
+SELECT year FROM library ORDER BY year ASC;
 
--- name: GetRunningManEpisodesByYear :many
-SELECT episode FROM running_man_video WHERE running_man_library_year = $1 ORDER BY episode ASC;
+-- name: GetEpisodesByYear :many
+SELECT episode FROM video WHERE library_year = $1 ORDER BY episode ASC;
 
--- name: GetRunningManVideoPrice :one
-SELECT price FROM running_man_video WHERE episode = $1;
-
--- name: GetRunningManVideoAndLibraryByEpisode :one
+-- name: GetVideoAndLibraryByEpisode :one
 SELECT
-  v.id AS running_man_video_id,
-  l.id AS running_man_library_id,
+  v.id AS video_id,
+  l.id AS library_id,
   l.year
-FROM running_man_video v JOIN running_man_library l ON v.running_man_library_year = l.year
+FROM video v JOIN library l ON v.library_year = l.year
 WHERE v.episode = $1;
 
--- name: CheckInvoiceExpiration :one
-SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND running_man_video_episode = $2 AND expired_at > NOW());
-
--- name: CheckExpiredInvoice :one
-SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW());
-
 -- name: CreateInvoice :exec
-INSERT INTO invoice (id, user_id, running_man_video_episode, amount, expired_at) VALUES ($1, $2, $3, $4, $5);
+INSERT INTO invoice (id, user_id, ref_id, total_amount, qr_url, expired_at) VALUES ($1, $2, $3, $4, $5, $6);
+
+-- name: HasValidInvoice :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE user_id = $1 AND expired_at > NOW());
+
+-- name: IsInvoiceExpired :one
+SELECT EXISTS(SELECT 1 FROM invoice WHERE id = $1 AND expired_at < NOW());
 
 -- name: CreatePayment :exec
 INSERT INTO payment (id, user_id, invoice_id) VALUES ($1, $2, $3);
-
--- name: CreateVideoCollection :exec
-INSERT INTO collection (user_id, running_man_video_episode) VALUES ($1, $2);

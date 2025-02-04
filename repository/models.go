@@ -8,43 +8,51 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Collection struct {
-	UserID                 int64 `json:"user_id"`
-	RunningManVideoEpisode int32 `json:"running_man_video_episode"`
-}
-
 type Invoice struct {
-	ID                     pgtype.UUID        `json:"id"`
-	UserID                 int64              `json:"user_id"`
-	RunningManVideoEpisode int32              `json:"running_man_video_episode"`
-	Amount                 int32              `json:"amount"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	ExpiredAt              pgtype.Timestamptz `json:"expired_at"`
+	ID          pgtype.UUID        `json:"id"`
+	UserID      int64              `json:"user_id"`
+	RefID       string             `json:"ref_id"`
+	TotalAmount int32              `json:"total_amount"`
+	QrUrl       string             `json:"qr_url"`
+	ExpiredAt   pgtype.Timestamptz `json:"expired_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
-type Payment struct {
-	ID        string             `json:"id"`
-	UserID    int64              `json:"user_id"`
-	InvoiceID pgtype.UUID        `json:"invoice_id"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-}
-
-type RunningManLibrary struct {
+type Library struct {
 	ID        int64              `json:"id"`
 	Year      int32              `json:"year"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
-type RunningManVideo struct {
-	ID                    pgtype.UUID        `json:"id"`
-	RunningManLibraryYear int32              `json:"running_man_library_year"`
-	Episode               int32              `json:"episode"`
-	Price                 int32              `json:"price"`
-	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+type Payment struct {
+	ID         string             `json:"id"`
+	UserID     int64              `json:"user_id"`
+	InvoiceID  pgtype.UUID        `json:"invoice_id"`
+	AmountPaid int32              `json:"amount_paid"`
+	Status     string             `json:"status"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
-	ID        int64              `json:"id"`
-	FirstName string             `json:"first_name"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID                    int64              `json:"id"`
+	FirstName             string             `json:"first_name"`
+	SubscriptionExpiredAt pgtype.Timestamptz `json:"subscription_expired_at"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt             pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type Video struct {
+	ID          pgtype.UUID        `json:"id"`
+	LibraryYear int32              `json:"library_year"`
+	Episode     int32              `json:"episode"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
