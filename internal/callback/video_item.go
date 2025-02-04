@@ -43,7 +43,7 @@ func (vi VideoItem) HandleUnsubscribedUser() *bot.EditMessageTextParams {
 	inlineKeyboard := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Berlangganan", CallbackData: "TODO"},
+				{Text: "Berlangganan", CallbackData: TypeInvoice},
 				{Text: "Kembali", CallbackData: fmt.Sprintf("%s:%d", TypeVideoList, vi.Year)},
 			},
 		},
