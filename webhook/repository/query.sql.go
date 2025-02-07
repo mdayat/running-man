@@ -33,3 +33,28 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) er
 	)
 	return err
 }
+
+const getUserIDByInvoiceID = `-- name: GetUserIDByInvoiceID :one
+SELECT user_id FROM invoice WHERE id = $1
+`
+
+func (q *Queries) GetUserIDByInvoiceID(ctx context.Context, id pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getUserIDByInvoiceID, id)
+	var user_id int64
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const updateUserSubscription = `-- name: UpdateUserSubscription :exec
+UPDATE "user" SET subscription_expired_at = $2 WHERE id = $1
+`
+
+type UpdateUserSubscriptionParams struct {
+	ID                    int64              `json:"id"`
+	SubscriptionExpiredAt pgtype.Timestamptz `json:"subscription_expired_at"`
+}
+
+func (q *Queries) UpdateUserSubscription(ctx context.Context, arg UpdateUserSubscriptionParams) error {
+	_, err := q.db.Exec(ctx, updateUserSubscription, arg.ID, arg.SubscriptionExpiredAt)
+	return err
+}

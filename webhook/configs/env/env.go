@@ -12,6 +12,7 @@ var (
 	TripayAPIKey       string
 	TripayPrivateKey   string
 	AllowedOrigins     string
+	BotToken           string
 )
 
 func Load() error {
@@ -25,6 +26,7 @@ func Load() error {
 	TripayAPIKey = os.Getenv("TRIPAY_API_KEY")
 	TripayPrivateKey = os.Getenv("TRIPAY_PRIVATE_KEY")
 	AllowedOrigins = os.Getenv("ALLOWED_ORIGINS")
+	BotToken = os.Getenv("BOT_TOKEN")
 
 	return nil
 }

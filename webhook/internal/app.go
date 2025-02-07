@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"net/http"
 	"strings"
 	"time"
 	"webhook/configs/env"
@@ -29,10 +28,6 @@ func NewApp() *chi.Mux {
 	}
 	router.Use(cors.Handler(options))
 	router.Use(middleware.Heartbeat("/ping"))
-
-	router.Post("/payment/callback", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
-	})
-
+	router.Post("/payment/callback", webhookHandler)
 	return router
 }
