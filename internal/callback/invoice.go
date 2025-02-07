@@ -96,11 +96,11 @@ func InvoiceHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 	logger.Info().Msg("successfully requested tripay transaction")
 
-	text := "Tagihan berhasil dibuat! Tagihan akan kedaluwarsa setelah satu jam.\n\nKlik tombol \"Proses Pembayaran\" untuk melanjutkan ke proses pembayaran."
+	text := "Tagihan berhasil dibuat! Tagihan akan kedaluwarsa setelah satu jam.\n\nKlik tombol \"Proses Tagihan\" untuk melanjutkan ke proses pembayaran."
 	inlineKeyboard := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Proses Pembayaran", CallbackData: "TODO"},
+				{Text: "Proses Tagihan", CallbackData: fmt.Sprintf("%s:%s", TypeInvoiceProcessor, merchantRefString)},
 			},
 		},
 	}

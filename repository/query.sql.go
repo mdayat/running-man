@@ -100,6 +100,17 @@ func (q *Queries) GetEpisodesByYear(ctx context.Context, libraryYear int32) ([]i
 	return items, nil
 }
 
+const getPaymentURLByInvoiceID = `-- name: GetPaymentURLByInvoiceID :one
+SELECT qr_url FROM invoice WHERE id = $1
+`
+
+func (q *Queries) GetPaymentURLByInvoiceID(ctx context.Context, id pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getPaymentURLByInvoiceID, id)
+	var qr_url string
+	err := row.Scan(&qr_url)
+	return qr_url, err
+}
+
 const getRunningManYears = `-- name: GetRunningManYears :many
 SELECT year FROM library ORDER BY year ASC
 `
@@ -177,4 +188,24 @@ func (q *Queries) IsUserSubscribed(ctx context.Context, id int64) (bool, error) 
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const validateInvoice = `-- name: ValidateInvoice :one
+SELECT
+    expired_at < NOW() AS is_expired,
+    EXISTS (SELECT 1 FROM payment WHERE invoice_id = i.id) AS is_used
+FROM invoice i
+WHERE i.id = $1
+`
+
+type ValidateInvoiceRow struct {
+	IsExpired bool `json:"is_expired"`
+	IsUsed    bool `json:"is_used"`
+}
+
+func (q *Queries) ValidateInvoice(ctx context.Context, id pgtype.UUID) (ValidateInvoiceRow, error) {
+	row := q.db.QueryRow(ctx, validateInvoice, id)
+	var i ValidateInvoiceRow
+	err := row.Scan(&i.IsExpired, &i.IsUsed)
+	return i, err
 }
