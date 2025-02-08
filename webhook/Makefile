@@ -1,6 +1,9 @@
 .DEFAULT_GOAL := run
 
-.PHONY:fmt vet build run
+.PHONY:fmt vet build run govulncheck staticcheck revive
+
+.SILENT:
+
 fmt:
 	go fmt ./...
 
@@ -12,3 +15,12 @@ build: vet
 
 run:
 	go run main.go
+
+govulncheck:
+	govulncheck ./...
+
+staticcheck:
+	staticcheck ./...
+
+revive:
+	revive -config ../revive.toml -formatter friendly ./...
