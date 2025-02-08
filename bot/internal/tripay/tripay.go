@@ -2,7 +2,6 @@ package tripay
 
 import (
 	"bytes"
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -34,7 +33,7 @@ type NewTransactionBodyParams struct {
 	OrderedItems  []OrderedItem
 }
 
-type transactionBody struct {
+type TransactionBody struct {
 	Method        string        `json:"method"`
 	MerchantRef   string        `json:"merchant_ref"`
 	Amount        int           `json:"amount"`
@@ -54,9 +53,9 @@ func createSignature(merchantRef string, amount int) string {
 	return hex.EncodeToString(hash.Sum(nil))
 }
 
-func NewTransactionBody(arg NewTransactionBodyParams) transactionBody {
+func NewTransactionBody(arg NewTransactionBodyParams) TransactionBody {
 	signature := createSignature(arg.MerchantRef, arg.TotalAmount)
-	return transactionBody{
+	return TransactionBody{
 		Method:        paymentChannel.qris,
 		MerchantRef:   arg.MerchantRef,
 		Amount:        arg.TotalAmount,
@@ -67,14 +66,14 @@ func NewTransactionBody(arg NewTransactionBodyParams) transactionBody {
 	}
 }
 
-type successfulTransaction struct {
+type SuccessfulTransaction struct {
 	Reference   string `json:"reference"`
 	Amount      int    `json:"amount"`
 	ExpiredTime int    `json:"expired_time"`
 	QrURL       string `json:"qr_url"`
 }
 
-func RequestTransaction(ctx context.Context, body transactionBody) (response successfulTransaction, _ error) {
+func RequestTransaction(body TransactionBody) (response SuccessfulTransaction, _ error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(body); err != nil {
 		return response, fmt.Errorf("failed to encode request body to request tripay transaction: %w", err)

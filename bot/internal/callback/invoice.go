@@ -89,7 +89,7 @@ func InvoiceHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 
 	logger.Info().Msg("requesting tripay transaction...")
-	response, err := tripay.RequestTransaction(ctx, tripay.NewTransactionBody(params))
+	response, err := tripay.RequestTransaction(tripay.NewTransactionBody(params))
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to request tripay transaction")
 		return
