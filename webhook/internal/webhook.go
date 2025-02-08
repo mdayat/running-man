@@ -262,4 +262,5 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Info().Msg("successfully sent tripay webhook request")
+	logger.Info().Int("status_code", http.StatusOK).Msg("successfully processed tripay webhook request")
 }

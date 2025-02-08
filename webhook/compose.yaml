@@ -11,6 +11,9 @@ services:
       - type: bind
         source: /etc/letsencrypt
         target: /etc/letsencrypt
+    restart: unless-stopped
+    networks:
+      - running_man
 
   webhook:
     image: mdayat/running-man-webhook:${RUNNING_MAN_WEBHOOK_TAG}
@@ -21,3 +24,12 @@ services:
       options:
         tag: webhook-service
         fluentd-sub-second-precision: "true"
+    depends_on:
+      - nginx
+    restart: on-failure
+    networks:
+      - running_man
+
+networks:
+  running_man:
+    external: true
