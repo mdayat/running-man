@@ -1,0 +1,58 @@
+name: Bot Deployment
+
+on:
+  push:
+    paths:
+      - "bot/**"
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "bot/**"
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set APP_TAG
+        id: app_tag_setter
+        run: echo "app_tag=$(git tag -l --sort=-v:refname "bot*" | head -n 1 | sed 's/bot\/v//')" >> $GITHUB_OUTPUT
+
+      - name: Add secrets
+        run: |
+          echo "${{ secrets.BOT_ENV_FILE }}" > bot/.env
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        run: |
+          cd bot
+          docker build -t "${{ vars.DOCKERHUB_USERNAME }}"/running-man-bot:${{ steps.app_tag_setter.outputs.app_tag }} .
+          docker push "${{ vars.DOCKERHUB_USERNAME }}"/running-man-bot:${{ steps.app_tag_setter.outputs.app_tag }}
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_PRIVATE_KEY }}
+          script: |
+            export RUNNING_MAN_BOT_TAG=${{ steps.app_tag_setter.outputs.app_tag }}
+            cd /app/bot
+            docker compose down
+            docker compose up -d

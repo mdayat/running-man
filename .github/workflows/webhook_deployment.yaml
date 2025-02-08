@@ -1,10 +1,14 @@
-name: Bot Production Deployment
+name: Webhook Deployment
 
 on:
   push:
+    paths:
+      - "webhook/**"
     branches:
       - main
   pull_request:
+    paths:
+      - "webhook/**"
     branches:
       - main
 
@@ -20,11 +24,11 @@ jobs:
 
       - name: Set APP_TAG
         id: app_tag_setter
-        run: echo "app_tag=$(git tag -l --sort=-v:refname | head -n 1 | sed 's/v//')" >> $GITHUB_OUTPUT
+        run: echo "app_tag=$(git tag -l --sort=-v:refname "webhook*" | head -n 1 | sed 's/webhook\/v//')" >> $GITHUB_OUTPUT
 
       - name: Add secrets
         run: |
-          echo "${{ secrets.BOT_ENV_FILE }}" > .env
+          echo "${{ secrets.WEBHOOK_ENV_FILE }}" > webhook/.env
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -37,8 +41,9 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t "${{ vars.DOCKERHUB_USERNAME }}"/running-man-bot:${{ steps.app_tag_setter.outputs.app_tag }} .
-          docker push "${{ vars.DOCKERHUB_USERNAME }}"/running-man-bot:${{ steps.app_tag_setter.outputs.app_tag }}
+          cd webhook
+          docker build -t "${{ vars.DOCKERHUB_USERNAME }}"/running-man-webhook:${{ steps.app_tag_setter.outputs.app_tag }} .
+          docker push "${{ vars.DOCKERHUB_USERNAME }}"/running-man-webhook:${{ steps.app_tag_setter.outputs.app_tag }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.0
@@ -47,7 +52,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_PRIVATE_KEY }}
           script: |
-            export RUNNING_MAN_BOT_TAG=${{ steps.app_tag_setter.outputs.app_tag }}
-            cd /app/bot
+            export RUNNING_MAN_WEBHOOK_TAG=${{ steps.app_tag_setter.outputs.app_tag }}
+            cd /app/webhook
             docker compose down
             docker compose up -d

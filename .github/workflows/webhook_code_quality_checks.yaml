@@ -1,0 +1,54 @@
+name: Webhook Code Quality Checks
+
+on:
+  push:
+    paths:
+      - "webhook/**"
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "webhook/**"
+    branches:
+      - main
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "webhook/go.mod"
+
+      - name: Verify dependencies
+        run: go mod verify
+        working-directory: webhook
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+        working-directory: webhook
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+        working-directory: webhook
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          work-dir: "webhook"
+          go-version-file: "go.mod"
+          go-package: ./...
+
+      - name: Run revive
+        uses: morphy2k/revive-action@v2
+        with:
+          config: revive.toml
+          path: ./webhook/...
+          fail-on-any: true

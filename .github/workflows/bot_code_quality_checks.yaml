@@ -1,10 +1,14 @@
-name: Code Quality Checks
+name: Bot Code Quality Checks
 
 on:
   push:
+    paths:
+      - "bot/**"
     branches:
       - main
   pull_request:
+    paths:
+      - "bot/**"
     branches:
       - main
 
@@ -21,20 +25,24 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: "go.mod"
+          go-version-file: "bot/go.mod"
 
       - name: Verify dependencies
         run: go mod verify
+        working-directory: bot
 
       - name: Install staticcheck
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
+        working-directory: bot
 
       - name: Run staticcheck
         run: staticcheck ./...
+        working-directory: bot
 
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
+          work-dir: "bot"
           go-version-file: "go.mod"
           go-package: ./...
 
@@ -42,4 +50,5 @@ jobs:
         uses: morphy2k/revive-action@v2
         with:
           config: revive.toml
+          path: ./bot/...
           fail-on-any: true
